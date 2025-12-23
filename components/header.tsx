@@ -178,15 +178,20 @@ export function Header() {
             {/* Mobile: Credits + Menu */}
             <div className="flex items-center gap-3 md:hidden">
               {userProfile && (
-                <div
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-full shadow-sm"
-                  title="Available Credits"
+                <a
+                  href="/credits"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-gray-50 transition"
                 >
-                  <Sparkles className="w-4 h-4 text-amber-600 fill-amber-400" />
-                  <span className="font-bold text-amber-800 text-lg">
-                    {credits}
-                  </span>
-                </div>
+                  <div
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-full shadow-sm"
+                    title="Available Credits"
+                  >
+                    <Sparkles className="w-4 h-4 text-amber-600 fill-amber-400" />
+                    <span className="font-bold text-amber-800 text-lg">
+                      {credits}
+                    </span>
+                  </div>
+                </a>
               )}
 
               <button

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react"; // ← Added useRef
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
   Mail,
@@ -34,7 +34,7 @@ function isValidGSTIN(gstin: string) {
 }
 
 /* ---------------- Page ---------------- */
-export default function ProfilePage() {
+function ProfileContent() {
   const { user, userProfile, loading } = useAuth();
 
   const searchParams = useSearchParams();
@@ -383,6 +383,23 @@ export default function ProfilePage() {
         </button>
       </main>
     </div>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-indigo-50">
+          <div className="text-center">
+            <Loader2 className="w-10 h-10 animate-spin text-indigo-600 mx-auto mb-4" />
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      }
+    >
+      <ProfileContent />
+    </Suspense>
   );
 }
 
