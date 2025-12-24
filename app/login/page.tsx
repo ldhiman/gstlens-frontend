@@ -11,8 +11,11 @@ import {
   Lock,
 } from "lucide-react";
 import LoginButton from "@/components/LoginButton";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
+  const { user } = useAuth();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Animated grid background */}
@@ -120,6 +123,17 @@ export default function LoginPage() {
 
             {/* Login Button */}
             <LoginButton />
+
+            {user && (
+              <div className="">
+                <a
+                  href="/dashboard"
+                  className="block w-full text-center py-3 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
+                >
+                  Dashboard
+                </a>
+              </div>
+            )}
 
             {/* Trust badges */}
             <div className="mt-8 pt-8 border-t border-slate-200">

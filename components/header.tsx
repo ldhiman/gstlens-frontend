@@ -19,6 +19,7 @@ import { getSyncStatus } from "@/lib/sync";
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, userProfile } = useAuth();
+  const [creditToShow, setCreditToShow] = useState(0);
   const pathname = usePathname();
 
   // Track if we've already shown low credit warning this session
@@ -49,11 +50,10 @@ export function Header() {
     return () => clearInterval(interval);
   }, [userProfile?.subscription?.active]);
 
-  const credits = userProfile?.credits ?? 0;
-  const hasSubscription = userProfile?.subscription?.active ?? false;
-
   // Show low credit warning only once per session
   useEffect(() => {
+    let credits = userProfile?.credits || 0;
+
     if (user && credits > 0 && credits < 5 && !hasShownLowCreditWarning) {
       toast(
         <div className="flex items-center gap-3">
@@ -80,7 +80,11 @@ export function Header() {
       );
       setHasShownLowCreditWarning(true);
     }
-  }, [credits, user, hasShownLowCreditWarning]);
+  }, [userProfile?.credits, user, hasShownLowCreditWarning]);
+
+  useEffect(() => {
+    setCreditToShow(userProfile?.credits || 0);
+  }, [userProfile]);
 
   const mainNavItems = [
     {
@@ -162,7 +166,7 @@ export function Header() {
                     >
                       <Sparkles className="w-4 h-4 text-amber-600 fill-amber-400" />
                       <span className="font-bold text-amber-800">
-                        {credits}
+                        {creditToShow}
                       </span>
                       <span className="text-xs text-amber-700 hidden lg:inline">
                         credits
@@ -188,7 +192,7 @@ export function Header() {
                   >
                     <Sparkles className="w-4 h-4 text-amber-600 fill-amber-400" />
                     <span className="font-bold text-amber-800 text-lg">
-                      {credits}
+                      {creditToShow}
                     </span>
                   </div>
                 </a>

@@ -8,17 +8,19 @@ import {
   TrendingUp,
   Camera,
   ChevronRight,
-  Receipt,
   X,
   Cloud,
   CloudOff,
   FileCheckCorner,
+  Image as ImageIcon,
+  File as FileIcon,
+  Loader2,
 } from "lucide-react";
 
 import { SYNC_EVENT } from "@/lib/constants";
 import { uploadInvoice, fetchGSTInfo } from "@/lib/api";
 import InvoiceReviewModal from "@/components/InvoiceReviewModal";
-import { getSettings } from "@/lib/settings";
+import { getAPPSettings, getSettings } from "@/lib/settings";
 import { saveInvoiceDraft, getAllInvoices, deleteInvoice } from "@/lib/storage";
 import UploadingModal from "@/components/UploadingModal";
 import EditInvoiceModal from "@/components/InvoiceEditModal";
@@ -30,6 +32,7 @@ import {
   startBackgroundSync,
   stopBackgroundSync,
 } from "@/lib/sync";
+
 /* ---------------- Types ---------------- */
 
 type InvoiceUI = {
@@ -43,6 +46,145 @@ type InvoiceUI = {
   synced_to_cloud: 0 | 1;
 };
 
+/* ---------------- New Preview Modal ---------------- */
+
+function FilePreviewModal({
+  file,
+  previewUrl,
+  isCompressing,
+  onClose,
+  onConfirm,
+}: {
+  file: File;
+  previewUrl: string;
+  isCompressing: boolean;
+  onClose: () => void;
+  onConfirm: (processedFile: File) => void;
+}) {
+  const isImage = file.type.startsWith("image/");
+  const isPdf = file.type === "application/pdf";
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
+      <div className="fixed inset-x-0 bottom-0 z-50 md:inset-0 md:flex md:items-center md:justify-center">
+        <div className="bg-white rounded-t-3xl md:rounded-3xl p-6 w-full md:max-w-2xl shadow-2xl max-h-[90vh] flex flex-col">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-gray-900">
+              Preview & Upload
+            </h3>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-xl transition"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-auto mb-4 bg-gray-50 rounded-2xl flex items-center justify-center">
+            {isImage && (
+              <img
+                src={previewUrl}
+                alt="Preview"
+                className="max-w-full max-h-full object-contain rounded-xl"
+              />
+            )}
+            {isPdf && (
+              <iframe
+                src={previewUrl}
+                className="w-full h-full rounded-xl"
+                title="PDF Preview"
+              />
+            )}
+            {!isImage && !isPdf && (
+              <div className="text-center text-gray-500">
+                <FileIcon className="w-16 h-16 mx-auto mb-2" />
+                <p>Preview not available for this file type</p>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <p className="text-sm text-gray-600">
+              File: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+            </p>
+
+            {isCompressing && (
+              <div className="flex items-center justify-center gap-2 text-sm text-blue-600">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Compressing image...
+              </div>
+            )}
+
+            <button
+              disabled={isCompressing}
+              onClick={() => onConfirm(file)}
+              className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-semibold flex items-center justify-center gap-3 shadow-lg hover:shadow-xl active:scale-98 transition-all disabled:opacity-70"
+            >
+              <Upload className="w-5 h-5" />
+              {isCompressing ? "Compressing..." : "Upload Invoice"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ---------------- Helper: Compress Image ---------------- */
+
+async function compressImageIfNeeded(file: File): Promise<File> {
+  if (!file.type.startsWith("image/") || file.size <= 1 * 1024 * 1024) {
+    return file; // No compression needed
+  }
+
+  // Simple canvas-based compression with iterative quality reduction
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d")!;
+  const img = new Image();
+  img.src = URL.createObjectURL(file);
+
+  await new Promise((resolve) => (img.onload = resolve));
+
+  // Optional: resize if very large (e.g., > 3000px)
+  let width = img.width;
+  let height = img.height;
+  const maxDim = 3000;
+  if (width > maxDim || height > maxDim) {
+    const ratio = Math.min(maxDim / width, maxDim / height);
+    width = Math.round(width * ratio);
+    height = Math.round(height * ratio);
+  }
+
+  canvas.width = width;
+  canvas.height = height;
+  ctx.drawImage(img, 0, 0, width, height);
+
+  let quality = 0.9;
+  let blob: Blob | null = null;
+
+  while (quality > 0.3) {
+    blob = await new Promise<Blob>((resolve) =>
+      canvas.toBlob((b) => resolve(b!), file.type, quality)
+    );
+    if (blob && blob.size <= 1 * 1024 * 1024) {
+      break;
+    }
+    quality -= 0.1;
+  }
+
+  if (!blob || blob.size > 1 * 1024 * 1024) {
+    // Fallback: lowest quality
+    blob = await new Promise<Blob>((resolve) =>
+      canvas.toBlob((b) => resolve(b!), file.type, 0.3)
+    );
+  }
+
+  URL.revokeObjectURL(img.src);
+
+  return new File([blob!], file.name, { type: file.type });
+}
+
 /* ---------------- Component ---------------- */
 
 export default function Home() {
@@ -52,6 +194,11 @@ export default function Home() {
   const [reviewInvoice, setReviewInvoice] = useState<any>(null);
   const [editInvoice, setEditInvoice] = useState<any>(null);
   const [showUploadSheet, setShowUploadSheet] = useState(false);
+
+  // New states for preview
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [isCompressing, setIsCompressing] = useState(false);
 
   const router = useRouter();
 
@@ -73,7 +220,6 @@ export default function Home() {
     return () => stopBackgroundSync();
   }, [user, userProfile]);
 
-  /* -------- Load stored invoices on mount -------- */
   useEffect(() => {
     if (!user) return;
     if (!userProfile) return;
@@ -123,16 +269,65 @@ export default function Home() {
     setInvoices(uiInvoices.reverse());
   }
 
+  /* -------- File selection handler -------- */
+
+  async function handleFileSelect(file: File) {
+    if (!file) return;
+
+    const url = URL.createObjectURL(file);
+    setSelectedFile(file);
+    setPreviewUrl(url);
+    setShowUploadSheet(false);
+    setMenuOpen(false);
+  }
+
+  /* -------- Confirm upload from preview -------- */
+
+  async function handleConfirmUpload(originalFile: File) {
+    let fileToUpload = originalFile;
+
+    if (
+      originalFile.type.startsWith("image/") &&
+      originalFile.size > 1 * 1024 * 1024
+    ) {
+      setIsCompressing(true);
+      try {
+        fileToUpload = await compressImageIfNeeded(originalFile);
+        setPreviewUrl(URL.createObjectURL(fileToUpload));
+        setSelectedFile(fileToUpload);
+      } catch (err) {
+        console.error("Compression failed", err);
+        alert("Compression failed, uploading original");
+      } finally {
+        setIsCompressing(false);
+      }
+    }
+
+    // Close preview
+    setSelectedFile(null);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl("");
+
+    // Proceed to actual upload
+    await handleUpload(fileToUpload);
+  }
+
+  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileSelect(file);
+    }
+    e.target.value = "";
+  }
+
   /* -------- Upload handler -------- */
 
   async function handleUpload(file: File) {
     setIsUploading(true);
-    setShowUploadSheet(false);
-    setMenuOpen(false);
 
     try {
       const res = await uploadInvoice(file);
-      const settings = getSettings();
+      const settings = getAPPSettings();
       const data = res.data;
       let seller_gstin_info = null;
       if (data.seller_gstin) {
@@ -151,6 +346,7 @@ export default function Home() {
         await saveInvoiceDraft(data, "auto_saved");
         await loadInvoices();
       } else {
+        await saveInvoiceDraft(data, "draft");
         setReviewInvoice(data);
       }
 
@@ -165,22 +361,6 @@ export default function Home() {
     } finally {
       setIsUploading(false);
     }
-  }
-
-  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) {
-      alert("No image captured");
-      return;
-    }
-    console.log("Captured file:", {
-      name: file.name,
-      type: file.type,
-      size: file.size,
-    });
-
-    handleUpload(file);
-    e.target.value = "";
   }
 
   /* ---------------- Render ---------------- */
@@ -331,23 +511,8 @@ export default function Home() {
             transform: translateY(0);
           }
         }
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
         .animate-slide-up {
           animation: slide-up 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        @media (min-width: 768px) {
-          .animate-fade-in {
-            animation: fade-in 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-          }
         }
       `}</style>
 
@@ -370,13 +535,28 @@ export default function Home() {
 
       {isUploading && <UploadingModal />}
 
+      {/* Preview Modal */}
+      {selectedFile && previewUrl && (
+        <FilePreviewModal
+          file={selectedFile}
+          previewUrl={previewUrl}
+          isCompressing={isCompressing}
+          onClose={() => {
+            setSelectedFile(null);
+            URL.revokeObjectURL(previewUrl);
+            setPreviewUrl("");
+          }}
+          onConfirm={handleConfirmUpload}
+        />
+      )}
+
       {reviewInvoice && (
         <InvoiceReviewModal
           isNew={!reviewInvoice._local_id}
           invoice={reviewInvoice}
           onClose={() => setReviewInvoice(null)}
           onEdit={() => {
-            setEditInvoice(reviewInvoice); // 🔥 open edit modal
+            setEditInvoice(reviewInvoice);
             setReviewInvoice(null);
           }}
           onDelete={async () => {
@@ -398,7 +578,7 @@ export default function Home() {
           onClose={() => setEditInvoice(null)}
           onSave={(updatedInvoice) => {
             setEditInvoice(null);
-            setReviewInvoice(updatedInvoice); // 🔁 return to review
+            setReviewInvoice(updatedInvoice);
           }}
         />
       )}
@@ -406,7 +586,7 @@ export default function Home() {
   );
 }
 
-/* ---------------- Small Components ---------------- */
+/* ---------------- Small Components (unchanged) ---------------- */
 
 function StatCard({ title, value, icon, gradient, bgGradient }: any) {
   return (
@@ -475,23 +655,18 @@ function InvoiceRow({ invoice, onClick }: any) {
       className="w-full p-5 rounded-2xl hover:bg-gray-50 active:bg-gray-100 transition-all duration-200 text-left group"
     >
       <div className="flex items-start justify-between gap-4">
-        {/* Left: Icon + Details */}
         <div className="flex items-start gap-4 flex-1 min-w-0">
-          {/* Invoice Icon */}
           <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-md flex-shrink-0">
             <FileCheckCorner className="w-6 h-6 text-white" />
           </div>
 
-          {/* Text Details */}
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-gray-900 truncate">
               {invoice.name}
             </p>
             <p className="text-sm text-gray-500 mt-1">{invoice.date}</p>
 
-            {/* Status + Sync Row */}
             <div className="flex items-center gap-4 mt-3">
-              {/* Status Badge */}
               <span
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                   isConfirmed
@@ -507,7 +682,6 @@ function InvoiceRow({ invoice, onClick }: any) {
                 {isConfirmed ? "Confirmed" : "Auto Saved"}
               </span>
 
-              {/* Sync Status - Icon Only */}
               <div
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                   isSynced
@@ -529,7 +703,6 @@ function InvoiceRow({ invoice, onClick }: any) {
           </div>
         </div>
 
-        {/* Right: Amount */}
         <div className="text-right flex-shrink-0">
           <p className="text-xl font-bold text-gray-900">
             ₹{parseFloat(invoice.amount).toLocaleString("en-IN")}
@@ -540,7 +713,6 @@ function InvoiceRow({ invoice, onClick }: any) {
         </div>
       </div>
 
-      {/* Chevron - appears on hover */}
       <div className="flex justify-end mt-4">
         <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
       </div>
