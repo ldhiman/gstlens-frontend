@@ -346,8 +346,11 @@ export default function Home() {
         await saveInvoiceDraft(data, "auto_saved");
         await loadInvoices();
       } else {
-        await saveInvoiceDraft(data, "draft");
-        setReviewInvoice(data);
+        const localId = await saveInvoiceDraft(data, "draft");
+        setReviewInvoice({
+          ...data,
+          _local_id: localId,
+        });
       }
 
       const isSubscribed = Boolean(user && userProfile?.subscription?.active);
@@ -543,7 +546,7 @@ export default function Home() {
           isCompressing={isCompressing}
           onClose={() => {
             setSelectedFile(null);
-            URL.revokeObjectURL(previewUrl);
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
             setPreviewUrl("");
           }}
           onConfirm={handleConfirmUpload}
@@ -560,6 +563,7 @@ export default function Home() {
             setReviewInvoice(null);
           }}
           onDelete={async () => {
+            if (!confirm("Delete this invoice?")) return;
             await deleteInvoice(reviewInvoice._local_id);
             setReviewInvoice(null);
             await loadInvoices();

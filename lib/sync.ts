@@ -6,29 +6,43 @@ import {
   markAsSynced,
   saveInvoiceDraft,
   StoredInvoice,
+  getInvoiceById,
   upsertInvoice,
 } from "@/lib/storage";
 import { getSettings, saveLocalSettings } from "./settings";
 import toast from "react-hot-toast";
 import { SYNC_EVENT } from "@/lib/constants";
+
+type SyncProgress = {
+  phase: "push" | "pull";
+  current: number;
+  total: number;
+};
+
 /* ----------------------------- */
 /* Push unsynced local invoices  */
 /* ----------------------------- */
-async function pushUnsyncedInvoices(): Promise<number> {
-  const unsynced = await getUnsyncedInvoices();
+async function pushUnsyncedInvoices(
+  onProgress?: (p: SyncProgress) => void
+): Promise<number> {
+  const unsynced = (await getUnsyncedInvoices()).filter(
+    (inv) => inv.status !== "draft"
+  );
   console.log("Unsynced invoics: " + unsynced.length);
   if (unsynced.length === 0) return 0;
 
-  const toastId = toast.loading(`Uploading 0/${unsynced.length} invoices...`);
+  let toastId;
 
-  const toUpload = unsynced.map((inv) => {
-    const { id, synced_to_cloud, cloud_id, ...rest } = inv;
-    return {
-      ...rest,
-      created_at: Math.floor(inv.created_at / 1000),
-      updated_at: Math.floor(inv.updated_at / 1000),
-    };
-  });
+  const toUpload = unsynced.map((inv) => ({
+    local_id: inv.id, // 🔑 REQUIRED
+    cloud_id: inv.cloud_id || null,
+    deleted: inv.deleted,
+    status: inv.status,
+    fp: inv.fp,
+    data: inv.data,
+    created_at: Math.floor(inv.created_at / 1000),
+    updated_at: Math.floor(inv.updated_at / 1000),
+  }));
 
   try {
     const res = await authFetch("/sync/invoices", {
@@ -39,18 +53,25 @@ async function pushUnsyncedInvoices(): Promise<number> {
 
     const { cloud_ids } = await handleResponse(res);
 
+    // toastId = toast.loading(`Uploading 0/${unsynced.length} invoices...`);
+
     for (let i = 0; i < unsynced.length; i++) {
       await markAsSynced(unsynced[i].id, cloud_ids[i]);
       // Update progress
-      toast.loading(`Uploading ${i + 1}/${unsynced.length} invoices...`, {
-        id: toastId,
+      onProgress?.({
+        phase: "push",
+        current: i + 1,
+        total: unsynced.length,
       });
+      // toast.loading(`Uploading ${i + 1}/${unsynced.length} invoices...`, {
+      //   id: toastId,
+      // });
     }
 
-    toast.success(`Uploaded ${unsynced.length} invoice(s)`, { id: toastId });
+    // toast.success(`Uploaded ${unsynced.length} invoice(s)`, { id: toastId });
     return unsynced.length;
   } catch (error) {
-    toast.error("Failed to upload invoices", { id: toastId });
+    // toast.error("Failed to upload invoices", { id: toastId });
     throw error;
   }
 }
@@ -58,36 +79,50 @@ async function pushUnsyncedInvoices(): Promise<number> {
 /* ----------------------------- */
 /* Pull new invoices from cloud  */
 /* ----------------------------- */
-async function pullNewInvoices(lastSyncTime: number): Promise<number> {
+async function pullNewInvoices(
+  lastSyncTime: number,
+  onProgress?: (p: SyncProgress) => void
+): Promise<number> {
   const res = await authFetch(`/sync/invoices?last_sync_time=${lastSyncTime}`);
   const { invoices } = await handleResponse(res);
 
   if (invoices.length === 0) return 0;
 
-  const toastId = toast.loading(
-    `Downloading 0/${invoices.length} invoice(s)...`
-  );
-
   for (let i = 0; i < invoices.length; i++) {
     const cloudInv = invoices[i];
 
+    const local = cloudInv.local_id
+      ? await getInvoiceById(cloudInv.local_id)
+      : null;
+
+    if (local?.deleted === 1 && cloudInv.deleted !== 1) {
+      // Local delete wins
+      continue;
+    }
+
     await upsertInvoice({
-      id: cloudInv.cloud_id, // or generate mapping
+      id: cloudInv.local_id ?? uuid(), // ✅ keep local ID stable
       status: cloudInv.status,
       fp: cloudInv.fp,
       data: cloudInv.data,
-      created_at: cloudInv.created_at,
-      updated_at: cloudInv.updated_at,
+      created_at: cloudInv.created_at * 1000,
+      updated_at: cloudInv.updated_at * 1000,
       synced_to_cloud: 1,
+      deleted: cloudInv.deleted,
       cloud_id: cloudInv.cloud_id,
     });
 
     // Update progress
-    toast.loading(`Downloading ${i + 1}/${invoices.length} invoice(s)...`, {
-      id: toastId,
+    // toast.loading(`Downloading ${i + 1}/${invoices.length} invoice(s)...`, {
+    //   id: toastId,
+    // });
+    onProgress?.({
+      phase: "pull",
+      current: i + 1,
+      total: invoices.length,
     });
   }
-  toast.success(`Downloaded ${invoices.length} invoice(s)`, { id: toastId });
+  // toast.success(`Downloaded ${invoices.length} invoice(s)`, { id: toastId });
   return invoices.length;
 }
 
@@ -111,47 +146,47 @@ export async function performCloudSync(): Promise<void> {
 
   const lastSyncTime = getSettings().last_sync_time || 0;
   const isFirstSync = lastSyncTime === 0;
-
-  let pulledCount = 0;
-  let pushedCount = 0;
-  let toastID;
+  const toastId = toast.loading(
+    isFirstSync ? "First time sync — preparing..." : "Syncing your invoices..."
+  );
   try {
-    if (isFirstSync) {
-      toastID = toast.loading(
-        "First time sync — downloading all your invoices..."
-      );
-    }
+    const pushedCount = await pushUnsyncedInvoices((p) => {
+      toast.loading(`Uploading invoices ${p.current}/${p.total}...`, {
+        id: toastId,
+      });
+    });
 
-    pulledCount = await pullNewInvoices(lastSyncTime);
-    pushedCount = await pushUnsyncedInvoices();
+    const pulledCount = await pullNewInvoices(lastSyncTime, (p) => {
+      toast.loading(`Downloading invoices ${p.current}/${p.total}...`, {
+        id: toastId,
+      });
+    });
+
+    const total = pushedCount + pulledCount;
 
     console.log("Pulled Invoices: " + pulledCount);
     console.log("Pushed Invoices: " + pushedCount);
 
-    const total = pulledCount + pushedCount;
-    if (total > 0) {
-      toast.success(`Sync complete! ${total} invoice(s) updated`);
-    } else {
-      toast.success("All caught up — you're in sync!");
-    }
+    toast.success(
+      total > 0
+        ? `Sync complete! ${total} invoice(s) updated`
+        : "All caught up — you're in sync!",
+      { id: toastId }
+    );
 
     window.dispatchEvent(new Event(SYNC_EVENT));
     updateLastSyncTime();
 
     console.log("Cloud sync completed successfully");
-  } catch (error: any) {
-    console.error("Cloud sync failed:", error);
-
-    if (
-      error.message?.includes("subscription") ||
-      error.message?.includes("403")
-    ) {
-      toast.error("Cloud sync requires an active subscription");
-    } else {
-      toast.error("Sync failed — will retry later");
-    }
+  } catch (err: any) {
+    console.error("Cloud sync failed:", err);
+    toast.error(
+      err.message?.includes("subscription")
+        ? "Cloud sync requires an active subscription"
+        : "Sync failed — will retry later",
+      { id: toastId }
+    );
   } finally {
-    toast.remove(toastID);
     isSyncing = false;
   }
 }

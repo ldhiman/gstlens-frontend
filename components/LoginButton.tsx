@@ -99,9 +99,10 @@ export default function LoginButton() {
                 <div className="mx-5 my-2 border-t border-gray-200" />
 
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     setDropdownOpen(false);
-                    logout();
+                    await logout();
+                    router.push("/");
                   }}
                   className="flex w-full items-center gap-4 px-5 py-3 text-left transition-colors hover:bg-red-50"
                 >

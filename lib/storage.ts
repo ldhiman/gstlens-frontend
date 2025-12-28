@@ -8,6 +8,7 @@ export type StoredInvoice = {
   created_at: number;
   updated_at: number;
   synced_to_cloud: 0 | 1;
+  deleted: 0 | 1;
   cloud_id: string;
 };
 
@@ -46,6 +47,9 @@ function openDB(): Promise<IDBDatabase> {
         if (!store.indexNames.contains("updated_at")) {
           store.createIndex("updated_at", "updated_at", { unique: false });
         }
+        if (!store.indexNames.contains("deleted")) {
+          store.createIndex("deleted", "deleted", { unique: false });
+        }
       }
     };
 
@@ -69,10 +73,17 @@ export async function getInvoiceById(
 export async function saveInvoiceDraft(
   invoiceData: any,
   status: "draft" | "confirmed" | "auto_saved"
-) {
+): Promise<string> {
   const db = await openDB();
 
   const fp = getFP(invoiceData.invoice_date);
+
+  if (invoiceData._local_id) {
+    const existing = await getInvoiceById(invoiceData._local_id);
+    if (existing?.deleted === 1) {
+      throw new Error("Cannot save a deleted invoice");
+    }
+  }
 
   const id = invoiceData._local_id ?? uuid();
 
@@ -87,14 +98,15 @@ export async function saveInvoiceDraft(
     created_at: invoiceData.created_at ?? Date.now(), // preserve if updating existing
     updated_at: Date.now(), // ADD THIS
     synced_to_cloud: 0, // ADD THIS
+    deleted: 0,
     cloud_id: "", // ADD THIS (empty initially)
   };
 
-  return new Promise<void>((resolve, reject) => {
+  return new Promise<string>((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, "readwrite");
     tx.objectStore(STORE_NAME).put(record);
 
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = () => resolve(id);
     tx.onerror = () => reject(tx.error);
   });
 }
@@ -116,7 +128,10 @@ export async function upsertInvoice(invoice: StoredInvoice) {
 export async function updateInvoice(
   id: string,
   updates: Partial<
-    Pick<StoredInvoice, "data" | "status" | "synced_to_cloud" | "cloud_id">
+    Pick<
+      StoredInvoice,
+      "data" | "status" | "synced_to_cloud" | "cloud_id" | "deleted"
+    >
   >
 ) {
   const db = await openDB();
@@ -133,6 +148,15 @@ export async function updateInvoice(
         return;
       }
 
+      if (
+        existing.deleted === 1 &&
+        updates.deleted !== 0 &&
+        (updates.data || updates.status)
+      ) {
+        reject(new Error("Cannot modify data/status of a deleted invoice"));
+        return;
+      }
+
       const updated: StoredInvoice = {
         ...existing,
         ...updates,
@@ -140,6 +164,12 @@ export async function updateInvoice(
           ? { ...existing.data, ...updates.data }
           : existing.data,
         updated_at: Date.now(),
+        deleted:
+          updates.deleted !== undefined
+            ? updates.deleted
+            : existing.deleted !== undefined
+            ? existing.deleted
+            : 0,
         synced_to_cloud:
           updates.synced_to_cloud !== undefined
             ? updates.synced_to_cloud
@@ -163,7 +193,8 @@ export async function getAllInvoices(): Promise<StoredInvoice[]> {
     const tx = db.transaction(STORE_NAME, "readonly");
     const req = tx.objectStore(STORE_NAME).getAll();
 
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () =>
+      resolve(req.result.filter((inv) => inv.deleted !== 1));
     req.onerror = () => reject(req.error);
   });
 }
@@ -204,7 +235,9 @@ export async function getInvoicesForGSTR1(
 
     req.onsuccess = () => {
       const valid = req.result.filter(
-        (inv) => inv.status === "confirmed" || inv.status === "auto_saved"
+        (inv) =>
+          inv.deleted !== 1 &&
+          (inv.status === "confirmed" || inv.status === "auto_saved")
       );
       resolve(valid);
     };
@@ -214,14 +247,9 @@ export async function getInvoicesForGSTR1(
 }
 
 export async function deleteInvoice(id: string) {
-  const db = await openDB();
-
-  return new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, "readwrite");
-    tx.objectStore(STORE_NAME).delete(id);
-
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+  return updateInvoice(id, {
+    deleted: 1,
+    synced_to_cloud: 0, // force resync so cloud can delete it
   });
 }
 
