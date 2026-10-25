@@ -220,3 +220,62 @@ test("Tally XML strictly differentiates between Sales and Purchase vouchers even
   // They MUST NOT be identical!
   assert.notEqual(salesXML, purchaseXML);
 });
+
+test("Tally XML export handles filtered subset of invoices with correct voucher count and ledger balance", () => {
+  const userGSTIN = "07AAAAA0000A1Z5";
+  const allInvoices: TallyInvoiceRecord[] = [
+    {
+      id: "inv-1",
+      data: {
+        invoice_number: "INV/01",
+        invoice_date: "10-10-2026",
+        seller_gstin: userGSTIN,
+        taxable_value: 1000.0,
+        cgst: 90.0,
+        sgst: 90.0,
+        invoice_total: 1180.0,
+        direction: "outward",
+      },
+    },
+    {
+      id: "inv-2",
+      data: {
+        invoice_number: "INV/02",
+        invoice_date: "15-10-2026",
+        seller_gstin: userGSTIN,
+        taxable_value: 2000.0,
+        cgst: 180.0,
+        sgst: 180.0,
+        invoice_total: 2360.0,
+        direction: "outward",
+      },
+    },
+    {
+      id: "inv-3",
+      data: {
+        invoice_number: "INV/03",
+        invoice_date: "20-10-2026",
+        seller_gstin: userGSTIN,
+        taxable_value: 5000.0,
+        cgst: 450.0,
+        sgst: 450.0,
+        invoice_total: 5900.0,
+        direction: "outward",
+      },
+    },
+  ];
+
+  // User selects only inv-1 and inv-3
+  const selectedSubset = allInvoices.filter((inv) => inv.id === "inv-1" || inv.id === "inv-3");
+  const xml = generateTallyXML(userGSTIN, selectedSubset, "Apex Global Ltd");
+
+  // Should include INV/01 and INV/03 but NOT INV/02
+  assert.match(xml, /<VOUCHERNUMBER>INV\/01<\/VOUCHERNUMBER>/);
+  assert.match(xml, /<VOUCHERNUMBER>INV\/03<\/VOUCHERNUMBER>/);
+  assert.doesNotMatch(xml, /<VOUCHERNUMBER>INV\/02<\/VOUCHERNUMBER>/);
+
+  // Exactly 2 VOUCHER blocks
+  const voucherCount = (xml.match(/<VOUCHER /g) || []).length;
+  assert.equal(voucherCount, 2);
+});
+
