@@ -15,12 +15,16 @@ import {
   AlertCircle,
   ArrowLeft,
   Loader2,
+  RefreshCw,
+  RotateCcw,
 } from "lucide-react";
 import { useState } from "react";
 import { authFetch } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { formatINR } from "@/lib/currency";
+import { UPDATE_CREDIT_EVENT } from "@/lib/constants";
+import toast from "react-hot-toast";
 
 export default function CreditsPage() {
   const { userProfile, loading } = useAuth();
@@ -44,6 +48,10 @@ export default function CreditsPage() {
 
   const credits = userProfile?.credits ?? 0;
   const hasSubscription = userProfile?.subscription?.active ?? false;
+  const isCancelRequested = Boolean(
+    userProfile?.subscription?.cancel_requested ||
+    userProfile?.subscription?.cancel_at_period_end
+  );
 
   const loadRazorpay = (): Promise<any> => {
     return new Promise((resolve, reject) => {
@@ -110,7 +118,8 @@ export default function CreditsPage() {
 
   // Subscribe to monthly plan
   const subscribeToPlan = async () => {
-    if (isProcessing || hasSubscription) return;
+    if (isProcessing) return;
+    if (hasSubscription && !isCancelRequested) return;
     setIsProcessing(true);
 
     try {
@@ -130,6 +139,33 @@ export default function CreditsPage() {
     } catch (error: any) {
       console.error("Subscription error:", error);
       alert(error.message || "Failed to start subscription. Please try again.");
+      setIsProcessing(false);
+    }
+  };
+
+  // Restart cancelled subscription by re-authorizing mandate with Razorpay
+  const restartSubscription = async () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+
+    try {
+      const response = await authFetch("/payments/create-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: "monthly" }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.detail || "Failed to restart subscription");
+      }
+
+      const data = await response.json();
+      toast.success("Redirecting to Razorpay to restart your subscription...");
+      window.location.href = data.short_url;
+    } catch (error: any) {
+      console.error("Restart subscription error:", error);
+      toast.error(error.message || "Failed to restart subscription. Please try again.");
       setIsProcessing(false);
     }
   };
@@ -162,6 +198,39 @@ export default function CreditsPage() {
       setShowCancelModal(false);
     }
   };
+
+  // Sync live subscription state from Razorpay
+  const syncSubscription = async () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+
+    try {
+      const response = await authFetch("/payments/sync-subscription", {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.detail || "Failed to sync status");
+      }
+
+      const data = await response.json();
+      if (data.active) {
+        toast.success("Subscription is verified and active with Razorpay!");
+      } else {
+        toast.error(
+          `Razorpay status: ${data.razorpay_status || "inactive"}. Subscription deactivated.`
+        );
+      }
+
+      window.dispatchEvent(new Event(UPDATE_CREDIT_EVENT));
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to sync subscription status.");
+      setIsProcessing(false);
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors pb-24 md:pb-12">
@@ -232,13 +301,27 @@ export default function CreditsPage() {
           <div
             className={`relative rounded-3xl p-6 sm:p-8 shadow-sm border transition-all ${
               hasSubscription
-                ? "border-emerald-500/80 bg-emerald-50/40 dark:bg-emerald-950/20"
+                ? isCancelRequested
+                  ? "border-amber-400/80 bg-amber-50/30 dark:bg-amber-950/20"
+                  : "border-emerald-500/80 bg-emerald-50/40 dark:bg-emerald-950/20"
                 : "border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900"
             }`}
           >
             {hasSubscription && (
-              <div className="absolute -top-3.5 left-6 bg-emerald-600 text-white px-3.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm">
-                <BadgeCheck className="w-3.5 h-3.5" /> ACTIVE PLAN
+              <div
+                className={`absolute -top-3.5 left-6 px-3.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm text-white ${
+                  isCancelRequested ? "bg-amber-500" : "bg-emerald-600"
+                }`}
+              >
+                {isCancelRequested ? (
+                  <>
+                    <AlertCircle className="w-3.5 h-3.5" /> CANCELLATION PENDING
+                  </>
+                ) : (
+                  <>
+                    <BadgeCheck className="w-3.5 h-3.5" /> ACTIVE PLAN
+                  </>
+                )}
               </div>
             )}
 
@@ -257,6 +340,18 @@ export default function CreditsPage() {
                     </p>
                   </div>
                 </div>
+
+                {isCancelRequested && (
+                  <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
+                    <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold">Cancellation in progress</p>
+                      <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5 leading-relaxed">
+                        Your cancellation request has been registered. Pro features remain active until the end of your billing cycle. Restart anytime to prevent interruption.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 <ul className="space-y-2 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
                   <li className="flex items-center gap-2">
@@ -278,14 +373,47 @@ export default function CreditsPage() {
                 </ul>
               </div>
 
-              <div className="flex flex-col justify-center sm:min-w-[200px]">
+              <div className="flex flex-col justify-center sm:min-w-[210px] gap-2">
                 {hasSubscription ? (
-                  <button
-                    onClick={() => setShowCancelModal(true)}
-                    className="w-full py-3.5 rounded-2xl border border-rose-300 dark:border-rose-800 text-rose-600 dark:text-rose-400 font-bold text-xs sm:text-sm hover:bg-rose-50 dark:hover:bg-rose-950/30 transition min-h-[44px]"
-                  >
-                    Cancel Subscription
-                  </button>
+                  isCancelRequested ? (
+                    <>
+                      <button
+                        onClick={restartSubscription}
+                        disabled={isProcessing}
+                        className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-700 hover:to-indigo-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-emerald-500/20 active:scale-98 transition min-h-[42px] disabled:opacity-50"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        {isProcessing ? "Connecting..." : "Restart Subscription"}
+                      </button>
+                      <button
+                        onClick={syncSubscription}
+                        disabled={isProcessing}
+                        className="w-full py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition flex items-center justify-center gap-1.5 min-h-[36px] disabled:opacity-50"
+                        title="Fetch live subscription status directly from Razorpay"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isProcessing ? "animate-spin" : ""}`} />
+                        Sync Status with Razorpay
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => setShowCancelModal(true)}
+                        className="w-full py-2.5 rounded-2xl border border-rose-300 dark:border-rose-800 text-rose-600 dark:text-rose-400 font-bold text-xs sm:text-sm hover:bg-rose-50 dark:hover:bg-rose-950/30 transition min-h-[40px]"
+                      >
+                        Cancel Subscription
+                      </button>
+                      <button
+                        onClick={syncSubscription}
+                        disabled={isProcessing}
+                        className="w-full py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition flex items-center justify-center gap-1.5 min-h-[38px] disabled:opacity-50"
+                        title="Fetch live subscription status directly from Razorpay"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isProcessing ? "animate-spin" : ""}`} />
+                        Sync Status with Razorpay
+                      </button>
+                    </>
+                  )
                 ) : (
                   <button
                     onClick={subscribeToPlan}
