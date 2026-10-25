@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   Receipt,
   Zap,
@@ -10,255 +11,173 @@ import {
   Clock,
   Lock,
   ArrowRight,
+  ArrowLeft,
+  CheckCircle,
 } from "lucide-react";
 import LoginButton from "@/components/LoginButton";
 import { useAuth } from "@/context/AuthContext";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function LoginPage() {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Subtle animated grid */}
-      <div className="absolute inset-0 bg-grid-white/[0.03] bg-[size:50px_50px] pointer-events-none"></div>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors flex flex-col justify-between">
+      {/* Top Navigation */}
+      <header className="w-full border-b border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-9 h-9 bg-gradient-to-tr from-indigo-600 to-emerald-500 rounded-xl flex items-center justify-center text-white shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-all">
+              <Receipt className="w-5 h-5" />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
+                GST<span className="text-indigo-600 dark:text-indigo-400">Lens</span>
+              </span>
+              <span className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                <ShieldCheck className="w-3 h-3" /> Secure Portal
+              </span>
+            </div>
+          </Link>
 
-      {/* Floating gradient orbs with smoother animation */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-purple-600/30 rounded-full blur-3xl animate-pulse-slow"></div>
-        <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-indigo-600/30 rounded-full blur-3xl animate-pulse-slow-delayed"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-pink-600/20 rounded-full blur-3xl animate-pulse-slow"></div>
-      </div>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <Link
+              href="/"
+              className="text-xs font-semibold text-slate-600 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 flex items-center gap-1 transition"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Back to Home
+            </Link>
+          </div>
+        </div>
+      </header>
 
-      <div className="relative w-full max-w-7xl grid lg:grid-cols-2 gap-12 items-center z-10">
-        {/* Left: Value Proposition (Desktop only) */}
-        <div className="hidden lg:flex flex-col justify-center space-y-10 text-left px-8">
-          <div className="space-y-6">
-            <div className="inline-flex items-center gap-3 px-5 py-2.5 bg-purple-500/10 border border-purple-500/30 rounded-full">
-              <Sparkles className="w-5 h-5 text-purple-400" />
-              <span className="text-purple-300 font-medium">
-                AI-Powered GST Compliance
+      {/* Main Login Area */}
+      <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+        <div className="w-full max-w-5xl grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+          {/* Left Column: Indian Fintech Trust & Capabilities (Desktop) */}
+          <div className="hidden lg:flex flex-col space-y-6 text-left">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 rounded-full w-fit">
+              <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">
+                AI GST Return Automation
               </span>
             </div>
 
-            <h1 className="text-5xl lg:text-6xl font-extrabold text-white leading-tight">
-              File GST Returns
-              <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-400">
-                in Under 60 Seconds
+            <h1 className="text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+              File GST Returns in{" "}
+              <span className="bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 bg-clip-text text-transparent">
+                Under 60 Seconds
               </span>
             </h1>
 
-            <p className="text-xl text-slate-300 max-w-lg">
-              No more manual data entry. Snap invoice photos or upload PDFs —
-              our AI extracts everything and generates ready-to-upload GSTR-1 &
-              GSTR-3B files instantly.
+            <p className="text-sm lg:text-base text-slate-600 dark:text-slate-400 leading-relaxed max-w-md">
+              No manual data entry or Excel headaches. Snap invoice photos or upload PDFs — our AI extracts numbers, verifies GSTINs, and generates portal-ready GSTR-1 & GSTR-3B JSON files.
             </p>
-          </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-6">
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6">
-              <TrendingUp className="w-8 h-8 text-purple-400 mb-3" />
-              <div className="text-3xl font-bold text-white">15,000+</div>
-              <div className="text-slate-400">Returns Filed This Month</div>
-            </div>
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6">
-              <Clock className="w-8 h-8 text-indigo-400 mb-3" />
-              <div className="text-3xl font-bold text-white">97%</div>
-              <div className="text-slate-400">Average Time Saved</div>
-            </div>
-          </div>
+            {/* Metrics */}
+            <div className="grid grid-cols-2 gap-4 pt-2">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+                <TrendingUp className="w-5 h-5 text-indigo-600 dark:text-indigo-400 mb-2" />
+                <p className="text-2xl font-black font-mono text-slate-900 dark:text-white">15,000+</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Invoices Processed</p>
+              </div>
 
-          {/* Features */}
-          <div className="space-y-5">
-            <FeatureItem
-              icon={<Zap />}
-              title="Lightning-Fast AI Extraction"
-              desc="99% accurate GSTIN, tax & totals detection in seconds"
-            />
-            <FeatureItem
-              icon={<FileCheck />}
-              title="One-Click Returns"
-              desc="Download perfect GSTR-1 & GSTR-3B JSON files instantly"
-            />
-            <FeatureItem
-              icon={<ShieldCheck />}
-              title="Zero Credentials Needed"
-              desc="We never ask for your GST portal login — 100% secure"
-            />
-          </div>
-        </div>
-
-        {/* Right: Login Card */}
-        <div className="w-full max-w-md mx-auto">
-          <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-10 border border-slate-200/50">
-            {/* Logo */}
-            <div className="flex justify-center mb-10">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-3xl blur-2xl opacity-60 animate-pulse"></div>
-                <div className="relative w-20 h-20 bg-gradient-to-r from-purple-600 to-pink-600 rounded-3xl flex items-center justify-center shadow-xl">
-                  <Receipt className="w-10 h-10 text-white" />
-                </div>
+              <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+                <Clock className="w-5 h-5 text-emerald-600 dark:text-emerald-400 mb-2" />
+                <p className="text-2xl font-black font-mono text-slate-900 dark:text-white">97%</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Time Saved on Filing</p>
               </div>
             </div>
 
-            <div className="text-center mb-10">
-              <h2 className="text-3xl font-bold text-slate-900 mb-3">
-                Welcome Back to GSTLens
-              </h2>
-              <p className="text-slate-600">
-                Sign in with Google to access your dashboard
+            {/* Key Guarantees */}
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center gap-3 text-xs font-medium text-slate-700 dark:text-slate-300">
+                <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                </div>
+                <span>Zero GST portal credentials required — 100% audit-proof</span>
+              </div>
+              <div className="flex items-center gap-3 text-xs font-medium text-slate-700 dark:text-slate-300">
+                <div className="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                </div>
+                <span>Official government GSTR-1 & GSTR-3B offline tool JSON</span>
+              </div>
+              <div className="flex items-center gap-3 text-xs font-medium text-slate-700 dark:text-slate-300">
+                <div className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                </div>
+                <span>Section 16(2) duplicate invoice detection to prevent penalties</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Sleek Login Card */}
+          <div className="w-full max-w-md mx-auto">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-7 sm:p-9 border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none transition-colors">
+              <div className="text-center mb-7">
+                <div className="w-14 h-14 bg-gradient-to-tr from-indigo-600 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-white shadow-lg shadow-indigo-500/25">
+                  <Receipt className="w-7 h-7" />
+                </div>
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                  Welcome to GSTLens
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1.5">
+                  Sign in to access your invoices, returns, and credits
+                </p>
+              </div>
+
+              {/* Mobile value points */}
+              <div className="lg:hidden space-y-2 mb-6 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300">
+                <p className="flex items-center gap-2 font-medium">
+                  <Zap className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  Instant AI OCR from phone camera
+                </p>
+                <p className="flex items-center gap-2 font-medium">
+                  <FileCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  GSTR-1 & GSTR-3B offline JSON
+                </p>
+              </div>
+
+              {/* Login Button */}
+              <div className="space-y-4">
+                <LoginButton />
+
+                {user && (
+                  <Link
+                    href="/dashboard"
+                    className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-700 hover:to-emerald-700 text-white font-bold text-xs shadow-md shadow-indigo-500/25 flex items-center justify-center gap-2 transition active:scale-98"
+                  >
+                    Go to Dashboard <ArrowRight className="w-4 h-4" />
+                  </Link>
+                )}
+              </div>
+
+              {/* Security Badges */}
+              <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-center gap-6 text-[11px] text-slate-500 dark:text-slate-400">
+                <span className="flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  256-bit Encrypted
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  No Password Needed
+                </span>
+              </div>
+
+              <p className="text-center text-[11px] text-slate-400 dark:text-slate-500 mt-6 leading-relaxed">
+                By continuing, you agree to our Terms of Service and Privacy Policy. All tax invoices remain private and confidential.
               </p>
             </div>
-
-            {/* Mobile features */}
-            <div className="lg:hidden space-y-4 mb-10">
-              <MobileFeature
-                icon={<Zap />}
-                text="Instant AI invoice processing"
-              />
-              <MobileFeature
-                icon={<FileCheck />}
-                text="Auto-generated GSTR-1 & GSTR-3B"
-              />
-              <MobileFeature
-                icon={<ShieldCheck />}
-                text="Secure — No GST credentials required"
-              />
-            </div>
-
-            {/* Login Button */}
-            <LoginButton />
-
-            {/* If already logged in */}
-            {user && (
-              <a
-                href="/dashboard"
-                className="mt-6 block w-full text-center py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl"
-              >
-                Go to Dashboard <ArrowRight className="inline w-5 h-5 ml-2" />
-              </a>
-            )}
-
-            {/* Trust indicators */}
-            <div className="mt-10 pt-8 border-t border-slate-200">
-              <div className="flex justify-center gap-8 text-sm text-slate-600">
-                <div className="flex items-center gap-2">
-                  <Lock className="w-5 h-5 text-green-600" />
-                  <span>End-to-End Encrypted</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-blue-600" />
-                  <span>No GST Login Needed</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Terms */}
-            <p className="text-center text-xs text-slate-500 mt-8">
-              By signing in, you agree to our{" "}
-              <a
-                href="#"
-                className="text-purple-600 hover:underline font-medium"
-              >
-                Terms of Service
-              </a>{" "}
-              and{" "}
-              <a
-                href="#"
-                className="text-purple-600 hover:underline font-medium"
-              >
-                Privacy Policy
-              </a>
-            </p>
           </div>
-
-          <p className="text-center text-sm text-slate-400 mt-8">
-            © {new Date().getFullYear()} GSTLens. All rights reserved.
-          </p>
         </div>
-      </div>
+      </main>
 
-      <style jsx>{`
-        @keyframes pulse-slow {
-          0%,
-          100% {
-            opacity: 0.2;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 0.4;
-            transform: scale(1.15);
-          }
-        }
-        @keyframes pulse-slow-delayed {
-          0%,
-          100% {
-            opacity: 0.2;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 0.4;
-            transform: scale(1.15);
-          }
-        }
-        .animate-pulse-slow {
-          animation: pulse-slow 15s ease-in-out infinite;
-        }
-        .animate-pulse-slow-delayed {
-          animation: pulse-slow-delayed 18s ease-in-out infinite;
-          animation-delay: -8s;
-        }
-        .bg-grid-white\\/\\[0\\.03\\] {
-          background-image: linear-gradient(
-              to right,
-              rgba(255, 255, 255, 0.03) 1px,
-              transparent 1px
-            ),
-            linear-gradient(
-              to bottom,
-              rgba(255, 255, 255, 0.03) 1px,
-              transparent 1px
-            );
-        }
-      `}</style>
-    </div>
-  );
-}
-
-function FeatureItem({
-  icon,
-  title,
-  desc,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-}) {
-  return (
-    <div className="flex items-start gap-5 group">
-      <div className="w-12 h-12 bg-purple-500/10 border border-purple-500/30 rounded-2xl flex items-center justify-center text-purple-400 flex-shrink-0 group-hover:bg-purple-500/20 transition">
-        {icon}
-      </div>
-      <div>
-        <h3 className="font-semibold text-white mb-1">{title}</h3>
-        <p className="text-slate-400 text-sm">{desc}</p>
-      </div>
-    </div>
-  );
-}
-
-function MobileFeature({
-  icon,
-  text,
-}: {
-  icon: React.ReactNode;
-  text: string;
-}) {
-  return (
-    <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-200">
-      <div className="text-purple-600">{icon}</div>
-      <span className="text-slate-800 font-medium">{text}</span>
+      {/* Footer */}
+      <footer className="w-full border-t border-slate-200/80 dark:border-slate-800 py-4 text-center text-xs text-slate-400">
+        © {new Date().getFullYear()} GSTLens. Built for Indian MSMEs & Tax Professionals.
+      </footer>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   X,
   AlertCircle,
+  AlertTriangle,
   Edit3,
   Check,
   Trash2,
@@ -73,6 +74,21 @@ export default function InvoiceReviewModal({
 
         {/* Content - scrollable */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          {/* Statutory Duplicate Warning Banner (Section 16(2)) */}
+          {invoice.duplicate_warning && (
+            <div className="bg-amber-50 border border-amber-300 rounded-xl p-3.5 flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-bold text-amber-900">
+                  Duplicate Invoice Warning (Section 16(2))
+                </p>
+                <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                  {invoice.duplicate_warning}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Warning Banner */}
           {invoice.warning && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-3">
@@ -217,9 +233,11 @@ function Field({
   currency = false,
   bold = false,
 }: any) {
-  const displayValue = value ?? "-";
+  const rawValue =
+    typeof value === "object" && value !== null ? value.value ?? "-" : value;
+  const displayValue = rawValue ?? "-";
   const formattedValue =
-    currency && value ? `₹${parseFloat(value).toFixed(2)}` : displayValue;
+    currency && rawValue ? `₹${parseFloat(rawValue).toFixed(2)}` : displayValue;
 
   return (
     <div className="flex items-start justify-between gap-4 py-1.5">

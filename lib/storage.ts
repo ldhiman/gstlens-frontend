@@ -93,6 +93,7 @@ export async function saveInvoiceDraft(
     fp,
     data: {
       ...invoiceData,
+      fp,
       _local_id: id,
     },
     created_at: invoiceData.created_at ?? Date.now(), // preserve if updating existing
@@ -157,12 +158,23 @@ export async function updateInvoice(
         return;
       }
 
+      const mergedData = updates.data
+        ? { ...existing.data, ...updates.data }
+        : existing.data;
+
+      const newFP = mergedData?.invoice_date
+        ? getFP(mergedData.invoice_date)
+        : existing.fp;
+
+      if (mergedData) {
+        mergedData.fp = newFP;
+      }
+
       const updated: StoredInvoice = {
         ...existing,
         ...updates,
-        data: updates.data
-          ? { ...existing.data, ...updates.data }
-          : existing.data,
+        fp: newFP,
+        data: mergedData,
         updated_at: Date.now(),
         deleted:
           updates.deleted !== undefined
@@ -253,7 +265,7 @@ export async function deleteInvoice(id: string) {
   });
 }
 
-function getFP(invoiceDate?: string): string {
+export function getFP(invoiceDate?: string): string {
   if (!invoiceDate || typeof invoiceDate !== "string") {
     return "UNKNOWN";
   }
@@ -305,7 +317,19 @@ function getFP(invoiceDate?: string): string {
   };
 
   const m = month.toLowerCase().slice(0, 3);
-  const mm = monthMap[m] || month.padStart(2, "0");
+  let mm = monthMap[m];
+
+  if (!mm) {
+    const num = parseInt(month, 10);
+    if (!isNaN(num) && num >= 1 && num <= 12) {
+      mm = String(num).padStart(2, "0");
+    }
+  }
+
+  // Validate 4-digit year and 2-digit month
+  if (!mm || !/^\d{4}$/.test(year)) {
+    return "UNKNOWN";
+  }
 
   return `${mm}${year}`;
 }

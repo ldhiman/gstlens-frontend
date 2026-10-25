@@ -13,24 +13,30 @@ import {
   Infinity,
   BadgeCheck,
   AlertCircle,
+  ArrowLeft,
+  Loader2,
 } from "lucide-react";
 import { useState } from "react";
 import { authFetch } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { formatINR } from "@/lib/currency";
 
 export default function CreditsPage() {
   const { userProfile, loading } = useAuth();
-  const [selectedPack, setSelectedPack] = useState<number | null>(null);
+  const router = useRouter();
+  const [selectedPack, setSelectedPack] = useState<number | null>(1); // Default to popular pack
   const [isProcessing, setIsProcessing] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="text-center">
-          <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <Coins className="w-9 h-9 text-indigo-600" />
+          <div className="w-14 h-14 bg-indigo-50 dark:bg-indigo-950/60 rounded-2xl flex items-center justify-center mx-auto mb-3 animate-pulse text-indigo-600 dark:text-indigo-400">
+            <Coins className="w-8 h-8" />
           </div>
-          <p className="text-gray-600">Loading your credits...</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Loading your credits...</p>
         </div>
       </div>
     );
@@ -158,132 +164,136 @@ export default function CreditsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors pb-24 md:pb-12">
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b border-gray-200/50">
-        <div className="max-w-5xl mx-auto px-6 py-5 flex items-center gap-3">
-          <Coins className="w-8 h-8 text-indigo-600" />
-          <h1 className="text-2xl font-bold text-gray-900">
-            Credits & Billing
-          </h1>
+      <header className="sticky top-0 z-20 bg-white/85 dark:bg-slate-950/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800 transition-colors">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition flex items-center gap-1.5 font-medium text-xs sm:text-sm"
+              aria-label="Back to dashboard"
+            >
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">Dashboard</span>
+            </button>
+            <div className="w-px h-5 bg-slate-200 dark:bg-slate-800" />
+            <div className="flex items-center gap-2">
+              <Coins className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              <h1 className="text-lg sm:text-xl font-bold tracking-tight">Credits & Subscription</h1>
+            </div>
+          </div>
+
+          <ThemeToggle />
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-10 space-y-12">
-        {/* Hero Balance */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-10 text-white shadow-2xl">
-          <div className="absolute inset-0 bg-black/10"></div>
-          <div className="relative z-10">
-            <p className="text-indigo-100 text-sm uppercase tracking-wider font-medium">
-              Your Available Credits
-            </p>
-            <div className="flex items-end gap-4 mt-4">
-              <h2 className="text-6xl md:text-7xl font-extrabold">{credits}</h2>
-              <Sparkles className="w-14 h-14 text-yellow-300 mb-2 animate-pulse" />
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+        {/* Balance Hero Card */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-slate-900 p-6 sm:p-8 text-white shadow-xl shadow-indigo-500/15 border border-indigo-500/20">
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <p className="text-indigo-200 text-xs uppercase tracking-wider font-semibold">
+                Available Balance
+              </p>
+              <div className="flex items-baseline gap-3 mt-2">
+                <span className="text-5xl sm:text-6xl font-black font-mono tabular-nums tracking-tight">
+                  {credits}
+                </span>
+                <span className="text-base sm:text-lg font-medium text-indigo-200">
+                  credits remaining
+                </span>
+              </div>
+              <p className="mt-3 text-xs sm:text-sm text-indigo-100/90 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-amber-300" /> 1 credit = 1 invoice extraction • Previews, edits & JSON downloads are always free
+              </p>
             </div>
-            <p className="mt-6 text-lg text-indigo-100 flex items-center gap-2">
-              <Zap className="w-6 h-6" />1 credit = 1 invoice processed •
-              Previews & edits are free
-            </p>
 
             {credits < 10 && credits > 0 && (
-              <div className="mt-6 inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium">
-                <TrendingUp className="w-5 h-5" />
-                Low balance – top up to continue
+              <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-2 rounded-2xl text-xs sm:text-sm font-semibold text-white">
+                <TrendingUp className="w-4 h-4 text-amber-300" />
+                Low balance — top up to avoid interruption
               </div>
             )}
           </div>
         </div>
 
         {/* Pro Subscription */}
-        <section>
-          <div className="text-center mb-10">
-            <h3 className="text-3xl font-bold text-gray-900">
-              Pro Plan – Cloud Sync + Monthly Credits
-            </h3>
-            <p className="mt-3 text-lg text-gray-600">
-              Best for regular users • Multi-device access
+        <section className="space-y-4">
+          <div className="text-center sm:text-left">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">
+              Pro Subscription
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+              Monthly allocation with automatic multi-device cloud backup & sync
             </p>
           </div>
 
-          <div className="max-w-3xl mx-auto">
-            <div
-              className={`relative rounded-3xl p-10 shadow-2xl border-4 transition-all ${
-                hasSubscription
-                  ? "border-green-500 bg-gradient-to-br from-green-50 to-emerald-50"
-                  : "border-indigo-500 bg-white"
-              }`}
-            >
-              {hasSubscription && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-green-500 text-white px-6 py-2 rounded-full font-bold flex items-center gap-2">
-                  <BadgeCheck className="w-5 h-5" />
-                  ACTIVE PLAN
+          <div
+            className={`relative rounded-3xl p-6 sm:p-8 shadow-sm border transition-all ${
+              hasSubscription
+                ? "border-emerald-500/80 bg-emerald-50/40 dark:bg-emerald-950/20"
+                : "border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900"
+            }`}
+          >
+            {hasSubscription && (
+              <div className="absolute -top-3.5 left-6 bg-emerald-600 text-white px-3.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                <BadgeCheck className="w-3.5 h-3.5" /> ACTIVE PLAN
+              </div>
+            )}
+
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="space-y-4 max-w-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                    <Cloud className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                      Pro Monthly Plan
+                    </h3>
+                    <p className="text-2xl font-black text-slate-900 dark:text-slate-100 font-mono tabular-nums">
+                      ₹499<span className="text-sm font-normal text-slate-500 dark:text-slate-400"> / month</span>
+                    </p>
+                  </div>
                 </div>
-              )}
 
-              <div className="text-center">
-                <div className="flex justify-center gap-4 items-center mb-6">
-                  <Cloud className="w-14 h-14 text-indigo-600" />
-                  <h4 className="text-4xl font-bold text-gray-900">Pro Plan</h4>
-                </div>
-
-                <p className="text-5xl font-extrabold text-gray-900 mb-2">
-                  ₹499
-                  <span className="text-2xl font-normal text-gray-600">
-                    /month
-                  </span>
-                </p>
-
-                <ul className="space-y-4 mt-10 text-left max-w-md mx-auto">
-                  <li className="flex items-center gap-3">
-                    <CheckCircle2 className="w-6 h-6 text-green-600" />
-                    <span className="text-gray-700">
-                      <strong>100 free credits every month</strong>
-                    </span>
+                <ul className="space-y-2 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                    <span><strong>100 free credits</strong> replenished every month</span>
                   </li>
-                  <li className="flex items-center gap-3">
-                    <CheckCircle2 className="w-6 h-6 text-green-600" />
-                    <span className="text-gray-700">
-                      Unlimited cloud backup & sync
-                    </span>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                    <span>Continuous cloud backup & real-time sync across devices</span>
                   </li>
-                  <li className="flex items-center gap-3">
-                    <CheckCircle2 className="w-6 h-6 text-green-600" />
-                    <span className="text-gray-700">
-                      Access on all your devices
-                    </span>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                    <span>Priority email & WhatsApp compliance support</span>
                   </li>
-                  <li className="flex items-center gap-3">
-                    <CheckCircle2 className="w-6 h-6 text-green-600" />
-                    <span className="text-gray-700">Priority support</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Infinity className="w-6 h-6 text-indigo-600" />
-                    <span className="text-gray-700">Cancel anytime</span>
+                  <li className="flex items-center gap-2">
+                    <Infinity className="w-4 h-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+                    <span>Cancel subscription anytime with 1 click</span>
                   </li>
                 </ul>
+              </div>
 
+              <div className="flex flex-col justify-center sm:min-w-[200px]">
                 {hasSubscription ? (
-                  <div className="mt-10">
-                    <button
-                      onClick={() => setShowCancelModal(true)}
-                      className="w-full py-4 rounded-2xl border border-red-300 text-red-600 font-bold text-lg hover:bg-red-50 transition"
-                    >
-                      Cancel Subscription
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setShowCancelModal(true)}
+                    className="w-full py-3.5 rounded-2xl border border-rose-300 dark:border-rose-800 text-rose-600 dark:text-rose-400 font-bold text-xs sm:text-sm hover:bg-rose-50 dark:hover:bg-rose-950/30 transition min-h-[44px]"
+                  >
+                    Cancel Subscription
+                  </button>
                 ) : (
                   <button
                     onClick={subscribeToPlan}
                     disabled={isProcessing}
-                    className={`mt-10 w-full py-5 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 transition-all ${
-                      isProcessing
-                        ? "bg-gray-300 text-gray-600 cursor-wait"
-                        : "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-xl"
-                    }`}
+                    className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-indigo-500/20 active:scale-98 transition min-h-[44px] disabled:opacity-50"
                   >
-                    <CreditCard className="w-6 h-6" />
-                    {isProcessing ? "Processing..." : "Subscribe Now"}
+                    <CreditCard className="w-4 h-4" />
+                    {isProcessing ? "Processing..." : "Subscribe to Pro"}
                   </button>
                 )}
               </div>
@@ -292,113 +302,115 @@ export default function CreditsPage() {
         </section>
 
         {/* One-Time Credit Packs */}
-        <section>
-          <div className="text-center mb-10">
-            <h3 className="text-3xl font-bold text-gray-900">
-              Or Buy Credits One-Time
-            </h3>
-            <p className="mt-3 text-lg text-gray-600">
-              Pay as you go • No recurring payment
+        <section className="space-y-4">
+          <div className="text-center sm:text-left">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">
+              One-Time Credit Packs
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+              Pay as you go • Credits never expire • GST included
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
             <CreditPack
               credits="50"
               price="₹100"
-              perInvoice="₹2.00"
+              perInvoice="₹2.00 / invoice"
               selected={selectedPack === 0}
-              onClick={() => setSelectedPack(selectedPack === 0 ? null : 0)}
+              onClick={() => setSelectedPack(0)}
               onBuy={() => buyCredits(50)}
               disabled={isProcessing}
             />
             <CreditPack
               credits="150"
               price="₹250"
-              perInvoice="₹1.67"
+              perInvoice="₹1.67 / invoice"
               save="Save 17%"
               popular
               selected={selectedPack === 1}
-              onClick={() => setSelectedPack(selectedPack === 1 ? null : 1)}
+              onClick={() => setSelectedPack(1)}
               onBuy={() => buyCredits(150)}
               disabled={isProcessing}
             />
             <CreditPack
               credits="350"
               price="₹500"
-              perInvoice="₹1.43"
-              save="Best Value – Save 28%"
+              perInvoice="₹1.43 / invoice"
+              save="Save 28%"
               selected={selectedPack === 2}
-              onClick={() => setSelectedPack(selectedPack === 2 ? null : 2)}
+              onClick={() => setSelectedPack(2)}
               onBuy={() => buyCredits(350)}
               disabled={isProcessing}
             />
           </div>
         </section>
 
-        {/* How Credits Work */}
-        <section className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 md:p-10">
-          <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">
-            How Credits Work
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-            <RuleItem text="1 credit deducted per invoice upload & AI extraction" />
-            <RuleItem text="Preview, edits & JSON generation are always FREE" />
-            <RuleItem text="Credits never expire" />
-            <RuleItem text="GSTIN verification is completely free" />
+        {/* Rules & Security */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              How Credits Work
+            </h3>
+            <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-400">
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
+                <span>1 credit is deducted per successful invoice AI scan & data extraction</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
+                <span>Invoice previews, corrections & JSON return downloads are 100% free</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
+                <span>Purchased credits never expire and roll over indefinitely</span>
+              </li>
+            </ul>
           </div>
-        </section>
 
-        {/* Security */}
-        <section className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-3xl p-8 border border-emerald-100">
-          <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
-            <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <ShieldCheck className="w-9 h-9 text-white" />
-            </div>
-            <div>
-              <h4 className="text-xl font-bold text-emerald-900">
-                Secure Payments
-              </h4>
-              <p className="mt-2 text-emerald-700">
-                Powered by Razorpay • PCI DSS compliant • Instant delivery
-              </p>
-            </div>
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              Bank-Grade Security
+            </h3>
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              Payments are processed through <strong>Razorpay</strong> with 256-bit PCI-DSS compliant encryption. We support UPI, credit/debit cards, Net Banking, and business accounts with GST invoicing.
+            </p>
           </div>
-        </section>
+        </div>
       </main>
 
       {/* Cancel Confirmation Modal */}
       {showCancelModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center">
-                <AlertCircle className="w-7 h-7 text-red-600" />
+        <div className="fixed inset-0 bg-black/60 dark:bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 border border-slate-200 dark:border-slate-800 animate-scale-in">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-rose-50 dark:bg-rose-950/60 rounded-xl flex items-center justify-center text-rose-600 dark:text-rose-400 flex-shrink-0">
+                <AlertCircle className="w-5 h-5" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">
-                Cancel Subscription?
+              <h3 className="text-lg font-bold">
+                Cancel Pro Subscription?
               </h3>
             </div>
 
-            <p className="text-gray-600 mb-8">
-              You'll keep cloud sync and monthly credits until the end of your
-              current billing period. After that, you'll switch to pay-as-you-go
-              credits.
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
+              You will retain cloud sync and your remaining monthly credits until the end of your billing period. After that, your account will switch to pay-as-you-go.
             </p>
 
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               <button
                 onClick={() => setShowCancelModal(false)}
-                className="flex-1 py-3 rounded-xl border border-gray-300 font-medium hover:bg-gray-50 transition"
+                className="flex-1 py-3 rounded-xl border border-slate-200 dark:border-slate-700 font-semibold text-xs sm:text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition min-h-[44px]"
               >
-                Keep Subscription
+                Keep Plan
               </button>
               <button
                 onClick={cancelSubscription}
                 disabled={isProcessing}
-                className="flex-1 py-3 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition"
+                className="flex-1 py-3 rounded-xl bg-rose-600 text-white font-bold text-xs sm:text-sm hover:bg-rose-700 transition min-h-[44px]"
               >
-                {isProcessing ? "Cancelling..." : "Yes, Cancel"}
+                {isProcessing ? "Cancelling..." : "Confirm Cancel"}
               </button>
             </div>
           </div>
@@ -408,7 +420,6 @@ export default function CreditsPage() {
   );
 }
 
-/* Reusable Components */
 function CreditPack({
   credits,
   price,
@@ -433,57 +444,39 @@ function CreditPack({
   return (
     <div
       onClick={onClick}
-      className={`relative rounded-3xl p-8 shadow-2xl border-4 cursor-pointer transition-all duration-300 hover:shadow-3xl ${
-        selected
-          ? "border-indigo-500 ring-4 ring-indigo-200 scale-105"
-          : "border-transparent"
-      } ${
+      className={`relative rounded-3xl p-6 sm:p-7 border cursor-pointer transition-all ${
         popular
-          ? "bg-gradient-to-br from-indigo-600 to-purple-700 text-white"
-          : "bg-white"
+          ? "border-indigo-500 bg-gradient-to-b from-indigo-50/50 to-white dark:from-indigo-950/30 dark:to-slate-900 shadow-md ring-1 ring-indigo-500/20"
+          : selected
+          ? "border-indigo-500 dark:border-indigo-400 bg-white dark:bg-slate-900 shadow-sm"
+          : "border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700"
       }`}
     >
       {popular && (
-        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-orange-500 text-white px-4 py-1 rounded-full text-sm font-bold">
-          MOST POPULAR
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-3 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase shadow-xs">
+          Most Popular
         </div>
       )}
       {save && !popular && (
-        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-emerald-500 text-white px-4 py-1 rounded-full text-sm font-bold">
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-3 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase shadow-xs">
           {save}
         </div>
       )}
 
       <div className="text-center">
-        <h4
-          className={`text-4xl font-extrabold ${
-            popular ? "" : "text-gray-800"
-          }`}
-        >
+        <h4 className="text-3xl sm:text-4xl font-black font-mono tabular-nums text-slate-900 dark:text-slate-100">
           {credits}
         </h4>
-        <p
-          className={`text-lg mt-1 ${
-            popular ? "text-indigo-100" : "text-gray-600"
-          }`}
-        >
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">
           Credits
         </p>
 
-        <div className="mt-6">
-          <p
-            className={`text-4xl font-extrabold ${
-              popular ? "text-white" : "text-gray-900"
-            }`}
-          >
+        <div className="mt-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+          <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 font-mono tabular-nums">
             {price}
           </p>
-          <p
-            className={`mt-2 text-sm ${
-              popular ? "text-indigo-200" : "text-gray-500"
-            }`}
-          >
-            {perInvoice} per invoice
+          <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">
+            {perInvoice}
           </p>
         </div>
 
@@ -493,27 +486,18 @@ function CreditPack({
             onBuy();
           }}
           disabled={disabled}
-          className={`mt-8 w-full py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 transition-all ${
+          className={`mt-4 w-full py-3 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all min-h-[44px] active:scale-98 ${
             disabled
-              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              ? "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
               : popular
-              ? "bg-white text-indigo-700 hover:bg-gray-100"
-              : "bg-indigo-600 text-white hover:bg-indigo-700"
+              ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/20"
+              : "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white"
           }`}
         >
-          <CreditCard className="w-6 h-6" />
-          {disabled ? "Processing..." : "Buy Now"}
+          <CreditCard className="w-4 h-4" />
+          {disabled ? "Processing..." : `Buy ${credits} Credits`}
         </button>
       </div>
-    </div>
-  );
-}
-
-function RuleItem({ text }: { text: string }) {
-  return (
-    <div className="flex items-start gap-4">
-      <CheckCircle2 className="w-6 h-6 text-emerald-600 flex-shrink-0 mt-0.5" />
-      <span className="text-gray-700 text-lg">{text}</span>
     </div>
   );
 }

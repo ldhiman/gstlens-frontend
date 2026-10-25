@@ -1,7 +1,8 @@
 type Props = {
-  params: { gstin: string };
+  params: Promise<{ gstin: string }>;
 };
 
+import Link from "next/link";
 import {
   Building2,
   CheckCircle,
@@ -10,227 +11,160 @@ import {
   FileText,
   Award,
   Shield,
-  Calendar,
   Hash,
   ArrowLeft,
+  Copy,
+  ExternalLink,
 } from "lucide-react";
 import { fetchGSTInfo } from "@/lib/api";
+import { Header } from "@/components/header";
 
 /* ---------- Server Fetch ---------- */
 async function fetchGSTInfoSSR(gstin: string) {
-  const res = await fetchGSTInfo(gstin);
-  if (!res?.data) return null;
-  return res.data;
+  try {
+    const res = await fetchGSTInfo(gstin);
+    if (!res?.data) return null;
+    return res.data;
+  } catch (e) {
+    return null;
+  }
 }
 
 /* ---------- Page ---------- */
 export default async function GSTInfoResultPage({ params }: Props) {
-  const gstin = (await params).gstin.toUpperCase();
+  const resolvedParams = await params;
+  const gstin = resolvedParams.gstin.toUpperCase();
   const data = await fetchGSTInfoSSR(gstin);
 
-  if (!data) {
+  const isActive = data && data.status && data.status.toLowerCase().includes("active") && data.legal_name !== "N/A";
+
+  if (!data || data.legal_name === "N/A") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 px-4">
-        <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 p-8 md:p-12 text-center max-w-md w-full">
-          <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <XCircle className="w-10 h-10 text-white" />
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+        <Header />
+        <main className="max-w-xl mx-auto px-4 py-16 text-center">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 sm:p-10 border border-slate-200/80 dark:border-slate-800 shadow-xl space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto shadow-inner">
+              <XCircle className="w-8 h-8" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+              GSTIN Not Found or Inactive
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+              No active GST registration record was found for <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{gstin}</span>. Please verify the 15-digit number and try again.
+            </p>
+            <div className="pt-4">
+              <Link
+                href="/gst-info"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-500/25 transition active:scale-95"
+              >
+                <ArrowLeft className="w-4 h-4" /> Try Another GSTIN
+              </Link>
+            </div>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">
-            GSTIN Not Found
-          </h2>
-          <p className="text-gray-600 mb-6">
-            The GST number you entered could not be found in the system. Please
-            verify and try again.
-          </p>
-          <button className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl active:scale-98 transition-all flex items-center justify-center gap-2 mx-auto">
-            <ArrowLeft className="w-5 h-5" />
-            Try Again
-          </button>
-        </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 py-8 px-4">
-      <div className="max-w-3xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-emerald-500/30">
-            <Shield className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            GSTIN Verified
-          </h1>
-          <p className="text-gray-600">
-            Registration details retrieved successfully
-          </p>
-        </div>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors pb-24 md:pb-12">
+      <Header />
 
-        {/* Status Hero Card */}
-        <div
-          className={`rounded-3xl shadow-2xl border overflow-hidden mb-6 bg-gradient-to-br from-emerald-500 to-teal-600`}
-        >
-          <div className="p-6 md:p-8 text-white">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="w-8 h-8" />
-
-                <div>
-                  <p className="text-sm opacity-90 mb-1">Registration Status</p>
-                  <p className="text-2xl font-bold">{data.status}</p>
-                </div>
-              </div>
-              <span className="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl text-sm font-semibold">
-                Verified
-              </span>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 mt-6">
-              <p className="text-xs opacity-75 mb-2">
-                GST Identification Number
-              </p>
-              <p className="text-2xl font-mono font-bold tracking-wide">
-                {data.gstin}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Business Information */}
-        <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden mb-6">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
-            <div className="flex items-center gap-2 text-white">
-              <Building2 className="w-5 h-5" />
-              <h2 className="font-semibold text-base">Business Information</h2>
-            </div>
-          </div>
-
-          <div className="p-6 space-y-4">
-            <DetailRow
-              icon={<Building2 className="w-5 h-5" />}
-              label="Legal Name"
-              value={data.legal_name}
-              primary
-            />
-            <DetailRow
-              icon={<Award className="w-5 h-5" />}
-              label="Trade Name"
-              value={data.trade_name}
-            />
-            <DetailRow
-              icon={<FileText className="w-5 h-5" />}
-              label="Constitution"
-              value={data.constitution}
-            />
-          </div>
-        </div>
-
-        {/* Registration Details */}
-        <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden mb-6">
-          <div className="bg-gradient-to-r from-violet-600 to-purple-600 px-6 py-4">
-            <div className="flex items-center gap-2 text-white">
-              <Shield className="w-5 h-5" />
-              <h2 className="font-semibold text-base">Registration Details</h2>
-            </div>
-          </div>
-
-          <div className="p-6 space-y-4">
-            <DetailRow
-              icon={<MapPin className="w-5 h-5" />}
-              label="State"
-              value={data.state}
-            />
-            <DetailRow
-              icon={<Hash className="w-5 h-5" />}
-              label="State Code"
-              value={data.state_code}
-            />
-            <DetailRow
-              icon={<FileText className="w-5 h-5" />}
-              label="PAN Number"
-              value={data.pan_number}
-              mono
-            />
-            {/* {data.registration_date && (
-              <DetailRow
-                icon={<Calendar className="w-5 h-5" />}
-                label="Registration Date"
-                value={data.registration_date}
-              />
-            )} */}
-          </div>
-        </div>
-
-        {/* Address (if available) */}
-        {/* {data.address && (
-          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden mb-6">
-            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-4">
-              <div className="flex items-center gap-2 text-white">
-                <MapPin className="w-5 h-5" />
-                <h2 className="font-semibold text-base">
-                  Principal Place of Business
-                </h2>
-              </div>
-            </div>
-
-            <div className="p-6">
-              <p className="text-gray-700 leading-relaxed">{data.address}</p>
-            </div>
-          </div>
-        )} */}
-
-        {/* Footer */}
-        <div className="text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-2xl border border-white/80">
-            <Shield className="w-4 h-4 text-emerald-600" />
-            <p className="text-xs text-gray-600 font-medium">
-              Data verified from GST Network
-            </p>
-          </div>
-        </div>
-
-        {/* Action Button */}
-        <div className="mt-8 flex justify-center">
-          <a
-            className="px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-semibold shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 active:scale-98 transition-all flex items-center gap-2"
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+        {/* Navigation Breadcrumb */}
+        <div className="flex items-center justify-between">
+          <Link
             href="/gst-info"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition"
           >
-            <ArrowLeft className="w-5 h-5" />
-            Search Another GSTIN
-          </a>
+            <ArrowLeft className="w-4 h-4" /> Search Another GSTIN
+          </Link>
+          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border ${
+            isActive
+              ? "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+              : "bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800"
+          }`}>
+            <CheckCircle className="w-3.5 h-3.5" /> {data.status || (isActive ? "Active" : "Inactive")}
+          </span>
         </div>
-      </div>
+
+        {/* Hero Card */}
+        <div className="p-6 sm:p-8 bg-gradient-to-r from-emerald-600 via-teal-600 to-slate-900 rounded-3xl text-white shadow-xl shadow-emerald-500/10 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <span className="text-[11px] uppercase tracking-wider text-emerald-200 font-bold block">
+                Trade Name
+              </span>
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight mt-0.5">
+                {data.trade_name || data.legal_name}
+              </h1>
+            </div>
+            <div className="px-3.5 py-1.5 rounded-xl bg-white/20 backdrop-blur-md self-start sm:self-auto text-xs font-mono font-bold tracking-wider">
+              {data.gstin}
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-white/20 grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+            <div>
+              <span className="text-emerald-200 text-[10px] block">State</span>
+              <span className="font-bold">{data.state || "N/A"}</span>
+            </div>
+            <div>
+              <span className="text-emerald-200 text-[10px] block">State Code</span>
+              <span className="font-bold font-mono">{data.state_code || gstin.slice(0, 2)}</span>
+            </div>
+            <div>
+              <span className="text-emerald-200 text-[10px] block">PAN Number</span>
+              <span className="font-bold font-mono">{data.pan_number || gstin.slice(2, 12)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Business Details Card */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm transition-colors space-y-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <Building2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <h2 className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+              Business & Registration Particulars
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <InfoTile label="Legal Name" value={data.legal_name} />
+            <InfoTile label="Trade Name" value={data.trade_name} />
+            <InfoTile label="Taxpayer Constitution" value={data.constitution || "Proprietorship / Company"} />
+            <InfoTile label="PAN Number" value={data.pan_number || gstin.slice(2, 12)} mono />
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+          <Link
+            href="/dashboard"
+            className="flex-1 py-3 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs text-center shadow-md shadow-indigo-500/25 transition active:scale-98"
+          >
+            Create Invoice with this GSTIN
+          </Link>
+          <Link
+            href="/gst-info"
+            className="flex-1 py-3 px-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs text-center shadow-xs transition active:scale-98"
+          >
+            Verify Another Number
+          </Link>
+        </div>
+      </main>
     </div>
   );
 }
 
-/* ---------- Components ---------- */
-
-function DetailRow({ icon, label, value, primary, mono }: any) {
+function InfoTile({ label, value, mono = false }: { label: string; value?: string; mono?: boolean }) {
   return (
-    <div className="flex items-start gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-      <div
-        className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-          primary
-            ? "bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-700"
-            : "bg-gray-100 text-gray-600"
-        }`}
-      >
-        {icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-          {label}
-        </p>
-        <p
-          className={`text-sm font-semibold text-gray-900 ${
-            mono ? "font-mono" : ""
-          }`}
-        >
-          {value || "-"}
-        </p>
-      </div>
+    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{label}</p>
+      <p className={`text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 mt-1 truncate ${mono ? "font-mono" : ""}`}>
+        {value || "-"}
+      </p>
     </div>
   );
 }

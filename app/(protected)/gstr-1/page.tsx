@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   FileText,
   Download,
@@ -10,12 +11,19 @@ import {
   CheckCircle2,
   Copy,
   Loader2,
+  ArrowLeft,
+  FileSpreadsheet,
+  ShieldCheck,
+  FileCode,
 } from "lucide-react";
 
 import { getAllInvoices } from "@/lib/storage";
 import { generateGSTR1JSON } from "@/lib/gstr1";
+import { generateGSTR1CSV, downloadCSV } from "@/lib/export";
+import TallyExportModal from "@/components/TallyExportModal";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { Header } from "@/components/header";
 
 export default function GSTR1Page() {
   const router = useRouter();
@@ -30,6 +38,7 @@ export default function GSTR1Page() {
   const [generating, setGenerating] = useState(false);
   const [showJSON, setShowJSON] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showTallyModal, setShowTallyModal] = useState(false);
 
   /* ---------------- Guards ---------------- */
   useEffect(() => {
@@ -51,8 +60,16 @@ export default function GSTR1Page() {
   /* ---------------- Filter Invoices ---------------- */
   const invoicesForGSTR1 = useMemo(() => {
     if (!sellerGSTIN) return [];
-    return allInvoices.filter((inv) => inv?.data?.seller_gstin === sellerGSTIN);
-  }, [allInvoices, sellerGSTIN]);
+    return allInvoices.filter((inv) => {
+      const d = inv.data || inv;
+      const matchSeller = d.seller_gstin === sellerGSTIN;
+      if (!matchSeller) return false;
+      if (month && year) {
+        return inv.fp === `${month}${year}` || d.fp === `${month}${year}`;
+      }
+      return true;
+    });
+  }, [allInvoices, sellerGSTIN, month, year]);
 
   /* ---------------- Generate Preview ---------------- */
   async function generatePreview() {
@@ -66,11 +83,11 @@ export default function GSTR1Page() {
 
     setTimeout(() => {
       const fp = `${month}${year}`;
-      const json = generateGSTR1JSON(sellerGSTIN, fp, invoicesForGSTR1);
+      const json = generateGSTR1JSON(sellerGSTIN || "", fp, invoicesForGSTR1);
       setPreview(json);
       setGenerating(false);
       setShowJSON(false);
-    }, 600);
+    }, 400);
   }
 
   /* ---------------- Actions ---------------- */
@@ -88,6 +105,13 @@ export default function GSTR1Page() {
     URL.revokeObjectURL(url);
   }
 
+  function downloadExcel() {
+    if (!sellerGSTIN) return;
+    const fp = `${month}${year}`;
+    const csvContent = generateGSTR1CSV(sellerGSTIN, fp, invoicesForGSTR1);
+    downloadCSV(`GSTR1_CA_Workpaper_${sellerGSTIN}_${fp}.csv`, csvContent);
+  }
+
   function copyJSON() {
     if (!preview) return;
     navigator.clipboard.writeText(JSON.stringify(preview, null, 2));
@@ -96,18 +120,8 @@ export default function GSTR1Page() {
   }
 
   const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
   ];
 
   // Default to previous month
@@ -120,45 +134,58 @@ export default function GSTR1Page() {
     }
   }, []);
 
-  /* ---------------- UI ---------------- */
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50 pb-24 md:pb-0">
-      {/* Mobile Header */}
-      <header className="sticky top-0 z-30 border-b border-white/50 bg-white/90 backdrop-blur-xl">
-        <div className="px-4 py-4 flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
-            <FileText className="w-5 h-5 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-bold text-gray-900 truncate">
-              GSTR-1 Return
-            </h1>
-            <p className="text-xs text-gray-600 truncate">
-              {sellerGSTIN || "Loading GSTIN..."}
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors pb-32 md:pb-16">
+      <Header />
+
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+        {/* Navigation Breadcrumb */}
+        <div className="flex items-center justify-between">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+          </Link>
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+            <ShieldCheck className="w-3.5 h-3.5" /> GSTR-1 Offline Tool Ready
+          </span>
+        </div>
+
+        {/* Title Banner */}
+        <div className="p-6 bg-gradient-to-r from-indigo-600 via-blue-600 to-slate-900 rounded-3xl text-white shadow-xl shadow-indigo-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/20 backdrop-blur-md mb-2">
+              <FileText className="w-3.5 h-3.5 text-amber-300" /> Outward Supplies Return
+            </div>
+            <h1 className="text-2xl font-black tracking-tight">GSTR-1 Sales & Turnover Register</h1>
+            <p className="text-indigo-100/90 text-xs sm:text-sm mt-1">
+              Filing GSTIN: <span className="font-mono font-bold text-white">{sellerGSTIN || "Loading..."}</span>
             </p>
           </div>
-        </div>
-      </header>
 
-      <main className="px-4 text-black py-6 space-y-6 max-w-2xl mx-auto">
+          <div className="text-right sm:border-l sm:border-white/20 sm:pl-6">
+            <p className="text-[11px] text-indigo-200 uppercase font-semibold">B2B + B2C Sales</p>
+            <p className="text-2xl font-black font-mono">{invoicesForGSTR1.length}</p>
+          </div>
+        </div>
+
         {/* Period Selector Card */}
-        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <Calendar className="w-6 h-6 text-indigo-600" />
-            <h2 className="text-lg font-semibold text-gray-900">
-              Select Return Period
-            </h2>
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm transition-colors">
+          <div className="flex items-center gap-2.5 mb-5 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <Calendar className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <h2 className="font-bold text-slate-900 dark:text-slate-100 text-sm">Select Return Period (MMYYYY)</h2>
           </div>
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
                 Month
               </label>
               <select
                 value={month}
                 onChange={(e) => setMonth(e.target.value)}
-                className="w-full px-4 py-4 rounded-2xl border border-gray-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 text-base"
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
               >
                 <option value="">Choose month</option>
                 {monthNames.map((m, i) => (
@@ -170,96 +197,114 @@ export default function GSTR1Page() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Year
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
+                Financial Year
               </label>
               <select
                 value={year}
                 onChange={(e) => setYear(e.target.value)}
-                className="w-full px-4 py-4 rounded-2xl border border-gray-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 text-base"
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
               >
                 <option value="">Choose year</option>
-                {["2023", "2024", "2025", "2026", "2027"].map((y) => (
+                {["2024", "2025", "2026", "2027"].map((y) => (
                   <option key={y} value={y}>
                     {y}
                   </option>
                 ))}
               </select>
             </div>
+
+            <div className="flex items-end">
+              <button
+                onClick={generatePreview}
+                disabled={!month || !year || generating}
+                className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-500/25 active:scale-98 transition disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+                Generate GSTR-1
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Preview Section */}
+        {/* Preview Results */}
         {preview && (
-          <div className="space-y-6">
-            {/* Summary Stats */}
-            <div className="grid grid-cols-1 gap-4">
-              <MobileSummaryCard
-                label="GSTIN"
-                value={preview.gstin}
-                icon={<Building2 className="w-5 h-5" />}
-              />
-              <MobileSummaryCard
-                label="Period"
-                value={`${monthNames[+month - 1]} ${year}`}
-                subtitle={`FP: ${preview.fp}`}
-                icon={<Calendar className="w-5 h-5" />}
-              />
-              <MobileSummaryCard
-                label="Total Invoices"
-                value={invoicesForGSTR1.length}
-                icon={<FileText className="w-5 h-5" />}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl p-5 text-white">
-                <p className="text-3xl font-bold">{preview.b2b?.length || 0}</p>
-                <p className="text-sm mt-1 opacity-90">B2B</p>
+          <div className="space-y-6 animate-slide-up">
+            {/* Counts Breakdown */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">B2B Invoices (Table 4)</p>
+                <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400 font-mono mt-1">
+                  {preview.b2b?.length || 0}
+                </p>
+                <p className="text-[11px] text-slate-400 mt-1">Registered businesses with GSTIN</p>
               </div>
-              <div className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl p-5 text-white">
-                <p className="text-3xl font-bold">{preview.b2c?.length || 0}</p>
-                <p className="text-sm mt-1 opacity-90">B2C</p>
+
+              <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">B2CS Supplies (Table 7)</p>
+                <p className="text-2xl font-black text-purple-600 dark:text-purple-400 font-mono mt-1">
+                  {preview.b2cs?.length || 0}
+                </p>
+                <p className="text-[11px] text-slate-400 mt-1">Aggregated by POS & Tax rate</p>
+              </div>
+
+              <div className="col-span-2 sm:col-span-1 bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total Invoices Included</p>
+                <p className="text-2xl font-black text-slate-900 dark:text-slate-100 font-mono mt-1">
+                  {invoicesForGSTR1.length}
+                </p>
+                <p className="text-[11px] text-slate-400 mt-1">For period {monthNames[+month - 1]} {year}</p>
               </div>
             </div>
 
-            {/* JSON Preview */}
-            <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+            {/* Action Buttons: JSON + Excel + Tally Prime XML */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+              <button
+                onClick={downloadJSON}
+                className="w-full py-3.5 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-xs rounded-2xl shadow-lg shadow-indigo-500/25 active:scale-98 transition flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4" /> Portal JSON (GSTR-1)
+              </button>
+
+              <button
+                onClick={downloadExcel}
+                className="w-full py-3.5 px-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-2xl shadow-xs active:scale-98 transition flex items-center justify-center gap-2"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600" /> CA Excel Workpaper
+              </button>
+
+              <button
+                onClick={() => setShowTallyModal(true)}
+                className="w-full py-3.5 px-4 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-2xl shadow-lg shadow-amber-500/20 active:scale-98 transition flex items-center justify-center gap-2"
+              >
+                <FileCode className="w-4 h-4" /> Export to Tally XML
+              </button>
+            </div>
+
+            {/* JSON Collapsible */}
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-xs">
               <button
                 onClick={() => setShowJSON(!showJSON)}
-                className="w-full px-5 py-5 flex items-center justify-between hover:bg-gray-50 active:bg-gray-100 transition"
+                className="w-full px-5 py-4 flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition"
               >
-                <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5 text-indigo-600" />
-                  <span className="font-semibold text-gray-900">
-                    View JSON Preview
-                  </span>
-                </div>
-                <ChevronDown
-                  className={`w-5 h-5 text-gray-600 transition-transform ${
-                    showJSON ? "rotate-180" : ""
-                  }`}
-                />
+                <span className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-indigo-600" /> View GSTR-1 JSON Payload
+                </span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${showJSON ? "rotate-180" : ""}`} />
               </button>
 
               {showJSON && (
-                <div className="border-t border-gray-200">
-                  <div className="bg-gray-900 p-4 relative">
-                    <button
-                      onClick={copyJSON}
-                      className="absolute top-3 right-3 px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 active:scale-95 transition"
-                    >
-                      {copied ? (
-                        <CheckCircle2 className="w-4 h-4" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                      {copied ? "Copied!" : "Copy"}
-                    </button>
-                    <pre className="text-green-300 text-xs overflow-x-auto pt-12 pb-4 max-h-96">
-                      {JSON.stringify(preview, null, 2)}
-                    </pre>
-                  </div>
+                <div className="p-4 bg-slate-950 border-t border-slate-850 relative">
+                  <button
+                    onClick={copyJSON}
+                    className="absolute top-4 right-4 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-bold flex items-center gap-1.5 active:scale-95 transition"
+                  >
+                    {copied ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copied ? "Copied" : "Copy Payload"}
+                  </button>
+                  <pre className="text-emerald-400 text-xs font-mono overflow-x-auto pt-8 max-h-80">
+                    {JSON.stringify(preview, null, 2)}
+                  </pre>
                 </div>
               )}
             </div>
@@ -267,51 +312,14 @@ export default function GSTR1Page() {
         )}
       </main>
 
-      {/* Mobile Fixed Bottom Actions */}
-      <div className="fixed md:max-w-2xl bottom-0 left-0 right-0 mx-auto rounded-t-md justify-center z-20 bg-white border-t border-gray-200 shadow-2xl md:static md:shadow-none">
-        <div className="px-4 py-4 space-y-3">
-          <button
-            onClick={generatePreview}
-            disabled={!month || !year || generating}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-lg shadow-lg active:scale-98 transition-all disabled:opacity-60 flex items-center justify-center gap-3"
-          >
-            {generating ? (
-              <>
-                <Loader2 className="w-6 h-6 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              "Generate GSTR-1 Preview"
-            )}
-          </button>
-
-          {preview && (
-            <button
-              onClick={downloadJSON}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-lg shadow-lg active:scale-98 transition-all flex items-center justify-center gap-3"
-            >
-              <Download className="w-6 h-6" />
-              Download JSON File
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ---------------- Mobile-Friendly Components ---------------- */
-function MobileSummaryCard({ label, value, subtitle, icon }: any) {
-  return (
-    <div className="bg-white rounded-2xl p-5 shadow-lg border border-gray-100">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-600">{label}</p>
-          <p className="text-xl font-bold text-gray-900 mt-1">{value}</p>
-          {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
-        </div>
-        {icon && <div className="text-indigo-600">{icon}</div>}
-      </div>
+      {/* Tally Prime XML Export Modal */}
+      <TallyExportModal
+        isOpen={showTallyModal}
+        onClose={() => setShowTallyModal(false)}
+        userGSTIN={sellerGSTIN || ""}
+        invoices={invoicesForGSTR1}
+        defaultCompanyName={userProfile?.business_name || "My Business"}
+      />
     </div>
   );
 }

@@ -105,8 +105,14 @@ async function pullNewInvoices(
       status: cloudInv.status,
       fp: cloudInv.fp,
       data: cloudInv.data,
-      created_at: cloudInv.created_at * 1000,
-      updated_at: cloudInv.updated_at * 1000,
+      created_at:
+        cloudInv.created_at > 1e11
+          ? cloudInv.created_at
+          : cloudInv.created_at * 1000,
+      updated_at:
+        cloudInv.updated_at > 1e11
+          ? cloudInv.updated_at
+          : cloudInv.updated_at * 1000,
       synced_to_cloud: 1,
       deleted: cloudInv.deleted,
       cloud_id: cloudInv.cloud_id,
