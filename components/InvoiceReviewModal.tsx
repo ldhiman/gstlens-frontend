@@ -36,6 +36,24 @@ export default function InvoiceReviewModal({
   const [saving, setSaving] = useState(false);
 
   console.log("Reviewing invoice:", invoice);
+  const handleWhatsApp = () => {
+    const invNum = invoice.invoice_number || invoice.name || "Invoice";
+    const amount = invoice.invoice_total || invoice.amount || 0;
+    const party = invoice.buyer_name || invoice.buyer_gstin || "Customer";
+    const seller = invoice.seller_name || invoice.seller_gstin || "Our Business";
+    const text = encodeURIComponent(
+      `🧾 *TAX INVOICE: ${invNum}*\n\n` +
+      `Dear ${party},\n` +
+      `Invoice details from *${seller}*:\n\n` +
+      `• *Invoice No:* ${invNum}\n` +
+      `• *Date:* ${invoice.invoice_date || invoice.date || "Today"}\n` +
+      `• *Total Amount:* ₹${Number(amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}\n\n` +
+      `Please review and settle payment.\n` +
+      `⚡ Generated via GSTLens`
+    );
+    window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
+  };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -76,13 +94,13 @@ export default function InvoiceReviewModal({
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           {/* Statutory Duplicate Warning Banner (Section 16(2)) */}
           {invoice.duplicate_warning && (
-            <div className="bg-amber-50 border border-amber-300 rounded-xl p-3.5 flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="bg-rose-50 dark:bg-rose-950/60 border-2 border-rose-300 dark:border-rose-700/80 rounded-2xl p-4 flex items-start gap-3.5 shadow-sm">
+              <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-bold text-amber-900">
-                  Duplicate Invoice Warning (Section 16(2))
+                <p className="text-sm font-black text-rose-900 dark:text-rose-200 uppercase tracking-wide">
+                  Duplicate Invoice Detected (Section 16(2))
                 </p>
-                <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                <p className="text-xs text-rose-800 dark:text-rose-300 mt-1 leading-relaxed font-semibold">
                   {invoice.duplicate_warning}
                 </p>
               </div>
@@ -169,12 +187,20 @@ export default function InvoiceReviewModal({
 
         {/* Footer Actions */}
         <div className="flex-shrink-0 p-4 border-t border-gray-100 bg-gray-50/50 space-y-3">
-          <div className="flex gap-3">
+          <div className="flex gap-2.5">
+            <button
+              onClick={handleWhatsApp}
+              type="button"
+              className="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+              title="Share invoice on WhatsApp"
+            >
+              <span>💬 WhatsApp</span>
+            </button>
             <button
               onClick={onEdit}
-              className="flex-1 flex items-center justify-center gap-2 bg-white border-2 border-gray-200 text-gray-700 rounded-xl py-3 px-4 font-medium hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-95"
+              className="flex-1 flex items-center justify-center gap-1.5 bg-white border border-gray-200 text-gray-700 rounded-xl py-2.5 px-3 font-semibold text-xs hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-95 cursor-pointer"
             >
-              <Edit3 className="w-4 h-4" />
+              <Edit3 className="w-3.5 h-3.5" />
               Edit
             </button>
             <button

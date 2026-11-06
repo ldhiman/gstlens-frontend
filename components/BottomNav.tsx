@@ -5,11 +5,12 @@ import {
   LayoutDashboard,
   FileText,
   FileCheck,
-  Coins,
+  Settings,
   Camera,
   UploadCloud,
   X,
   Sparkles,
+  ShoppingCart,
 } from "lucide-react";
 import { useState, useRef } from "react";
 
@@ -30,7 +31,7 @@ export default function BottomNav() {
       const event = new CustomEvent("DIRECT_FILE_SELECT", { detail: file });
       window.dispatchEvent(event);
 
-      if (pathname !== "/dashboard") {
+      if (pathname !== "/dashboard" && pathname !== "/invoices") {
         router.push("/dashboard");
       }
       e.target.value = "";
@@ -70,36 +71,70 @@ export default function BottomNav() {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              <button
-                onClick={() => cameraInputRef.current?.click()}
-                className="flex flex-col items-center justify-center gap-2 p-5 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/60 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all text-slate-800 dark:text-slate-200 font-medium active:scale-98"
-              >
-                <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/20">
-                  <Camera className="w-6 h-6" />
+            <div className="space-y-2.5 pt-1">
+              {/* Option 1: Sales Invoice */}
+              <div className="p-3 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-2xl border border-indigo-100 dark:border-indigo-900/60 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">Sales Invoice</h4>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">Scan customer outward bill</p>
+                  </div>
                 </div>
-                <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                  Take Photo
-                </span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 text-center">
-                  Camera capture
-                </span>
-              </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="p-2 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs hover:bg-slate-50 active:scale-95 transition"
+                    title="Camera capture"
+                  >
+                    <Camera className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 bg-indigo-600 text-white rounded-xl shadow-2xs hover:bg-indigo-700 active:scale-95 transition"
+                    title="Upload file"
+                  >
+                    <UploadCloud className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
 
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex flex-col items-center justify-center gap-2 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-all text-slate-800 dark:text-slate-200 font-medium active:scale-98"
-              >
-                <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-slate-700 text-white flex items-center justify-center shadow-md">
-                  <UploadCloud className="w-6 h-6" />
+              {/* Option 2: Purchase Bill */}
+              <div className="p-3 bg-emerald-50/70 dark:bg-emerald-950/40 rounded-2xl border border-emerald-100 dark:border-emerald-900/60 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+                    <ShoppingCart className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">Purchase Bill</h4>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">Scan vendor bill for ITC</p>
+                  </div>
                 </div>
-                <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                  Upload File
-                </span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 text-center">
-                  PDF, PNG, JPG
-                </span>
-              </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => {
+                      setSheetOpen(false);
+                      router.push("/purchases?scan=camera");
+                    }}
+                    className="p-2 bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs hover:bg-slate-50 active:scale-95 transition"
+                    title="Camera capture"
+                  >
+                    <Camera className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSheetOpen(false);
+                      router.push("/purchases?scan=file");
+                    }}
+                    className="p-2 bg-emerald-600 text-white rounded-xl shadow-2xs hover:bg-emerald-700 active:scale-95 transition"
+                    title="Upload file"
+                  >
+                    <UploadCloud className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -133,25 +168,25 @@ export default function BottomNav() {
             onClick={() => router.push("/dashboard")}
             className={`flex flex-col items-center justify-center w-14 h-full transition-colors ${
               isActive("/dashboard")
-                ? "text-indigo-600 dark:text-indigo-400 font-semibold"
+                ? "text-blue-600 dark:text-blue-400 font-semibold"
                 : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
             }`}
           >
             <LayoutDashboard className="w-5 h-5" />
-            <span className="text-[10px] mt-1 font-medium">Dashboard</span>
+            <span className="text-[10px] mt-1 font-medium">Home</span>
           </button>
 
-          {/* GSTR-1 */}
+          {/* Invoices */}
           <button
-            onClick={() => router.push("/gstr-1")}
+            onClick={() => router.push("/invoices")}
             className={`flex flex-col items-center justify-center w-14 h-full transition-colors ${
-              isActive("/gstr-1")
-                ? "text-indigo-600 dark:text-indigo-400 font-semibold"
+              isActive("/invoices")
+                ? "text-blue-600 dark:text-blue-400 font-semibold"
                 : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
             }`}
           >
             <FileText className="w-5 h-5" />
-            <span className="text-[10px] mt-1 font-medium">GSTR-1</span>
+            <span className="text-[10px] mt-1 font-medium">Invoices</span>
           </button>
 
           {/* Scan Center Button */}
@@ -160,39 +195,39 @@ export default function BottomNav() {
               id="tour-scan-button"
               onClick={() => setSheetOpen(true)}
               aria-label="Scan or Upload Invoice"
-              className="w-14 h-14 rounded-full bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-500 text-white shadow-lg shadow-indigo-500/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-all ring-4 ring-white dark:ring-slate-950"
+              className="w-14 h-14 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-emerald-500 text-white shadow-lg shadow-blue-500/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-all ring-4 ring-white dark:ring-slate-950"
             >
               <Camera className="w-6 h-6" />
             </button>
             <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 mt-1">
-              Scan
+              AI Scan
             </span>
           </div>
 
-          {/* GSTR-3B */}
+          {/* Parties */}
           <button
-            onClick={() => router.push("/gstr-3b")}
+            onClick={() => router.push("/clients")}
             className={`flex flex-col items-center justify-center w-14 h-full transition-colors ${
-              isActive("/gstr-3b")
-                ? "text-indigo-600 dark:text-indigo-400 font-semibold"
+              isActive("/clients")
+                ? "text-blue-600 dark:text-blue-400 font-semibold"
                 : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
             }`}
           >
             <FileCheck className="w-5 h-5" />
-            <span className="text-[10px] mt-1 font-medium">GSTR-3B</span>
+            <span className="text-[10px] mt-1 font-medium">Parties</span>
           </button>
 
-          {/* Credits */}
+          {/* Settings */}
           <button
-            onClick={() => router.push("/credits")}
+            onClick={() => router.push("/settings")}
             className={`flex flex-col items-center justify-center w-14 h-full transition-colors ${
-              isActive("/credits")
-                ? "text-indigo-600 dark:text-indigo-400 font-semibold"
+              isActive("/settings")
+                ? "text-blue-600 dark:text-blue-400 font-semibold"
                 : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
             }`}
           >
-            <Coins className="w-5 h-5" />
-            <span className="text-[10px] mt-1 font-medium">Credits</span>
+            <Settings className="w-5 h-5" />
+            <span className="text-[10px] mt-1 font-medium">Settings</span>
           </button>
         </div>
       </nav>

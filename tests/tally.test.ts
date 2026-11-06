@@ -279,3 +279,101 @@ test("Tally XML export handles filtered subset of invoices with correct voucher 
   assert.equal(voucherCount, 2);
 });
 
+test("Generates schema-compliant Tally Credit Note Voucher with reversed accounting balance", () => {
+  const userGSTIN = "07AAAAA0000A1Z5";
+  const cnRecords: TallyInvoiceRecord[] = [
+    {
+      data: {
+        invoice_number: "CN-2026-001",
+        invoice_date: "25-10-2026",
+        seller_gstin: userGSTIN,
+        buyer_gstin: "07BBBBB1111B1Z2",
+        buyer_gstin_info: { trade_name: "Gupta & Sons Retail" },
+        pos: "07",
+        taxable_value: 2000.0,
+        cgst: 180.0,
+        sgst: 180.0,
+        invoice_total: 2360.0,
+        document_type: "credit_note",
+      },
+    },
+  ];
+
+  const xml = generateTallyXML(userGSTIN, cnRecords, "Apex Global Ltd");
+
+  assert.match(xml, /<VOUCHER VCHTYPE="Credit Note" ACTION="Create" OBJVIEW="Invoice Voucher View">/);
+  assert.match(xml, /<VOUCHERTYPENAME>Credit Note<\/VOUCHERTYPENAME>/);
+  assert.match(xml, /<VOUCHERNUMBER>CN-2026-001<\/VOUCHERNUMBER>/);
+  // Party Credit in Credit Note (ISDEEMEDPOSITIVE No, Amount 2360.00)
+  assert.match(xml, /<LEDGERNAME>Gupta &amp; Sons Retail<\/LEDGERNAME>\s*<ISDEEMEDPOSITIVE>No<\/ISDEEMEDPOSITIVE>\s*<ISPARTYLEDGER>Yes<\/ISPARTYLEDGER>\s*<AMOUNT>2360.00<\/AMOUNT>/);
+  // Sales Debit in Credit Note (ISDEEMEDPOSITIVE Yes, Amount -2000.00)
+  assert.match(xml, /<LEDGERNAME>Sales Account @ 18%<\/LEDGERNAME>\s*<ISDEEMEDPOSITIVE>Yes<\/ISDEEMEDPOSITIVE>\s*<AMOUNT>-2000.00<\/AMOUNT>/);
+  // Output CGST Debit in Credit Note (-180.00)
+  assert.match(xml, /<LEDGERNAME>Output CGST<\/LEDGERNAME>\s*<ISDEEMEDPOSITIVE>Yes<\/ISDEEMEDPOSITIVE>\s*<AMOUNT>-180.00<\/AMOUNT>/);
+});
+
+test("Generates schema-compliant Tally Debit Note Voucher with reversed accounting balance", () => {
+  const userGSTIN = "07AAAAA0000A1Z5";
+  const dnRecords: TallyInvoiceRecord[] = [
+    {
+      data: {
+        invoice_number: "DN-2026-001",
+        invoice_date: "26-10-2026",
+        seller_gstin: "27SUPPLIER1234S1Z9",
+        buyer_gstin: userGSTIN,
+        seller_gstin_info: { trade_name: "Mahindra Logistics" },
+        pos: "27",
+        taxable_value: 5000.0,
+        igst: 900.0,
+        invoice_total: 5900.0,
+        document_type: "debit_note",
+      },
+    },
+  ];
+
+  const xml = generateTallyXML(userGSTIN, dnRecords, "Apex Global Ltd");
+
+  assert.match(xml, /<VOUCHER VCHTYPE="Debit Note" ACTION="Create" OBJVIEW="Invoice Voucher View">/);
+  assert.match(xml, /<VOUCHERTYPENAME>Debit Note<\/VOUCHERTYPENAME>/);
+  assert.match(xml, /<VOUCHERNUMBER>DN-2026-001<\/VOUCHERNUMBER>/);
+  // Vendor Debit in Debit Note (ISDEEMEDPOSITIVE Yes, Amount -5900.00)
+  assert.match(xml, /<LEDGERNAME>Mahindra Logistics<\/LEDGERNAME>\s*<ISDEEMEDPOSITIVE>Yes<\/ISDEEMEDPOSITIVE>\s*<ISPARTYLEDGER>Yes<\/ISPARTYLEDGER>\s*<AMOUNT>-5900.00<\/AMOUNT>/);
+  // Purchase Credit in Debit Note (ISDEEMEDPOSITIVE No, Amount 5000.00)
+  assert.match(xml, /<LEDGERNAME>Purchase Account @ 18%<\/LEDGERNAME>\s*<ISDEEMEDPOSITIVE>No<\/ISDEEMEDPOSITIVE>\s*<AMOUNT>5000.00<\/AMOUNT>/);
+  // Input IGST Credit in Debit Note (900.00)
+  assert.match(xml, /<LEDGERNAME>Input IGST<\/LEDGERNAME>\s*<ISDEEMEDPOSITIVE>No<\/ISDEEMEDPOSITIVE>\s*<AMOUNT>900.00<\/AMOUNT>/);
+});
+
+test("Custom configurable ledger mappings apply correctly in Tally XML", () => {
+  const userGSTIN = "07AAAAA0000A1Z5";
+  const invRecords: TallyInvoiceRecord[] = [
+    {
+      data: {
+        invoice_number: "INV/CUSTOM/01",
+        invoice_date: "27-10-2026",
+        seller_gstin: userGSTIN,
+        buyer_gstin: "07BBBBB1111B1Z2",
+        buyer_gstin_info: { trade_name: "Client Retail" },
+        taxable_value: 1000.0,
+        cgst: 90.0,
+        sgst: 90.0,
+        invoice_total: 1180.0,
+        direction: "outward",
+      },
+    },
+  ];
+
+  const customConfig = {
+    salesLedger: "Main Domestic Sales @ {rate}%",
+    outputCgst: "CGST Central Output A/c",
+    outputSgst: "SGST State Output A/c",
+    roundOff: "Rounding Adjustment",
+  };
+
+  const xml = generateTallyXML(userGSTIN, invRecords, "Apex Global Ltd", customConfig);
+
+  assert.ok(xml.includes("<LEDGERNAME>Main Domestic Sales @ 18%</LEDGERNAME>"));
+  assert.ok(xml.includes("<LEDGERNAME>CGST Central Output A/c</LEDGERNAME>"));
+  assert.ok(xml.includes("<LEDGERNAME>SGST State Output A/c</LEDGERNAME>"));
+});
+

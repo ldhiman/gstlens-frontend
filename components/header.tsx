@@ -3,14 +3,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  Receipt,
-  FileText,
-  Settings,
   Menu,
-  X,
   Sparkles,
-  ArrowRight,
+  Receipt,
+  Plus,
   ShieldCheck,
+  Search,
+  Camera,
 } from "lucide-react";
 import LoginButton from "./LoginButton";
 import { useAuth } from "@/context/AuthContext";
@@ -20,18 +19,19 @@ import { getSyncStatus } from "@/lib/sync";
 import { ThemeToggle } from "./ThemeToggle";
 
 export function Header() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, userProfile } = useAuth();
-  const creditToShow = userProfile?.credits || 0;
+  const sub = userProfile?.subscription;
+  const isUnlimited = Boolean(
+    userProfile?.unlimited_credits ||
+    (sub?.active && (sub?.unlimited_credits === true || sub?.unlimited_credits === "true")) ||
+    (sub?.active && sub?.plan?.toLowerCase().includes("unlimited"))
+  );
+  const creditToShow = isUnlimited ? "∞" : (userProfile?.credits || 0);
   const pathname = usePathname();
 
-  // Track if we've already shown low credit warning this session
-  const [hasShownLowCreditWarning, setHasShownLowCreditWarning] =
-    useState(false);
-
+  const [hasShownLowCreditWarning, setHasShownLowCreditWarning] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
 
-  // Update sync time every 15 seconds if user has cloud sync
   useEffect(() => {
     if (!userProfile?.subscription?.active) {
       setLastSyncTime(null);
@@ -51,10 +51,9 @@ export function Header() {
     return () => clearInterval(interval);
   }, [userProfile?.subscription?.active]);
 
-  // Show low credit warning only once per session
   useEffect(() => {
+    if (isUnlimited) return;
     let credits = userProfile?.credits || 0;
-
     if (user && credits > 0 && credits < 5 && !hasShownLowCreditWarning) {
       toast(
         <div className="flex items-center gap-3">
@@ -75,221 +74,128 @@ export function Header() {
       );
       setHasShownLowCreditWarning(true);
     }
-  }, [userProfile?.credits, user, hasShownLowCreditWarning]);
+  }, [userProfile?.credits, user, hasShownLowCreditWarning, isUnlimited]);
 
-  const mainNavItems = [
-    {
-      label: "GSTR-1",
-      href: "/gstr-1",
-      icon: <FileText className="w-4 h-4" />,
-    },
-    {
-      label: "GSTR-3B",
-      href: "/gstr-3b",
-      icon: <FileText className="w-4 h-4" />,
-    },
-  ];
-
-  const mobileOnlyNavItem = {
-    label: "Profile & Settings",
-    href: "/profile",
-    icon: <Settings className="w-4 h-4" />,
+  const openSidebar = () => {
+    window.dispatchEvent(new Event("TOGGLE_APP_SIDEBAR"));
   };
 
-  const isActive = (href: string) => pathname === href;
+  // Derive human-readable breadcrumb from pathname
+  const pageTitle = (() => {
+    if (pathname.includes("/invoices/new")) return "New Invoice";
+    if (pathname.includes("/invoices/edit")) return "Edit Invoice";
+    if (pathname.includes("/invoices")) return "Invoices & Sales";
+    if (pathname.includes("/purchases")) return "Purchase Bills";
+    if (pathname.includes("/clients")) return "Parties & Ledgers";
+    if (pathname.includes("/inventory")) return "Inventory Catalog";
+    if (pathname.includes("/receipts")) return "Payment Vouchers";
+    if (pathname.includes("/expenses")) return "Expense Tracker";
+    if (pathname.includes("/gstr-1")) return "GSTR-1 Outward Return";
+    if (pathname.includes("/gstr-2b") || pathname.includes("/reconcile")) return "GSTR-2B Reconcile";
+    if (pathname.includes("/gstr-3b")) return "GSTR-3B Summary";
+    if (pathname.includes("/returns")) return "GSTR-2B Reconcile";
+    if (pathname.includes("/reports")) return "Financial Reports";
+    if (pathname.includes("/settings")) return "Settings & Backup";
+    if (pathname.includes("/credits")) return "OCR Credit Packs";
+    return "Dashboard";
+  })();
 
   return (
-    <>
-      <header className="sticky inset-x-0 top-0 z-50 bg-white/85 dark:bg-slate-950/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 bg-gradient-to-tr from-indigo-600 to-emerald-500 rounded-2xl flex items-center justify-center shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-all">
-                <Receipt className="w-5 h-5 text-white" />
+    <header className="sticky inset-x-0 top-0 z-30 bg-white/85 dark:bg-slate-950/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800 transition-colors">
+      <div className="px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Left: Mobile Sidebar Trigger + Breadcrumb */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={openSidebar}
+              className="p-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              aria-label="Toggle Sidebar Menu"
+              title="Toggle Sidebar (Ctrl+B)"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            {/* Mobile Brand */}
+            <div className="flex items-center gap-2 md:hidden">
+              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-xs">
+                <Receipt className="w-4 h-4" />
               </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <h1 className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
-                    GST<span className="text-indigo-600 dark:text-indigo-400">Lens</span>
-                  </h1>
-                  <span className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-                    <ShieldCheck className="w-3 h-3" /> GSTN Ready
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-none hidden sm:block">
-                  Smart GST Invoicing & Compliance
-                </p>
-              </div>
+              <span className="font-bold text-sm text-slate-900 dark:text-white">GSTLens</span>
+            </div>
+
+            {/* Desktop Breadcrumb */}
+            <div className="hidden md:flex items-center gap-2 text-xs">
+              <span className="text-slate-400 font-medium">Workspace</span>
+              <span className="text-slate-300 dark:text-slate-600">/</span>
+              <span className="font-bold text-slate-900 dark:text-white text-sm">{pageTitle}</span>
+            </div>
+          </div>
+
+          {/* Right: Quick Action, Credits, Theme & Avatar */}
+          <div className="flex items-center gap-2">
+            {/* 📸 Scan Bill */}
+            <Link
+              href="/purchases"
+              className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition active:scale-98"
+              title="Scan or upload a purchase bill"
+            >
+              <Camera className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+              <span>Scan Bill</span>
             </Link>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-1.5">
-              {mainNavItems.map((item, idx) => (
-                <Link
-                  key={item.href}
-                  id={idx === 0 ? "tour-returns-link" : undefined}
-                  href={item.href}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-medium text-xs transition-all ${
-                    isActive(item.href)
-                      ? "bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/80 shadow-xs font-semibold"
-                      : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white"
-                  }`}
-                >
-                  {item.icon}
-                  {item.label}
-                </Link>
-              ))}
+            {/* ➕ New Bill */}
+            <Link
+              href="/invoices/new"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition active:scale-98 shrink-0"
+              title="Create a new invoice"
+            >
+              <Plus className="w-3.5 h-3.5 shrink-0" />
+              <span>New Bill</span>
+            </Link>
 
-              <div className="w-px h-5 bg-slate-200 dark:bg-slate-800 mx-1.5" />
-
-              {/* Take Tour Button */}
-              <button
-                onClick={() => window.dispatchEvent(new Event("RESTART_TOUR"))}
-                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-xl border border-indigo-100 dark:border-indigo-900/60 transition-all"
-                title="Interactive Guide"
+            {/* Live Cloud Sync status indicator */}
+            {userProfile?.subscription?.active && (
+              <span
+                className="hidden lg:flex text-xs text-slate-500 dark:text-slate-400 font-medium px-2 items-center gap-1.5"
+                title={lastSyncTime ? `Last synced: ${lastSyncTime}` : "Saved to cloud"}
               >
-                <Sparkles className="w-3.5 h-3.5" />
-                Tour
-              </button>
+                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                Saved to cloud
+              </span>
+            )}
 
-              {/* Desktop: Sync Status + Credits */}
-              {userProfile && (
-                <>
-                  {/* Live Sync Status */}
-                  {userProfile.subscription?.active && (
-                    <span className="text-xs text-slate-600 dark:text-slate-400 font-medium px-2.5 flex items-center gap-1.5">
-                      <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                      {lastSyncTime}
-                    </span>
-                  )}
-
-                  {/* Credits Badge */}
-                  <Link
-                    href="/credits"
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800/60 rounded-xl hover:shadow-xs transition"
-                    title="Available Processing Credits"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 fill-amber-400 dark:fill-amber-500" />
-                    <span className="font-extrabold text-xs text-amber-800 dark:text-amber-300 tabular-nums">
-                      {creditToShow}
-                    </span>
-                    <span className="text-[11px] text-amber-700 dark:text-amber-400 font-medium hidden lg:inline">
-                      credits
-                    </span>
-                  </Link>
-                </>
-              )}
-
-              {/* Theme Toggle Button */}
-              <ThemeToggle className="ml-1" />
-
-              <div className="w-px h-5 bg-slate-200 dark:bg-slate-800 mx-1" />
-
-              <LoginButton />
-            </nav>
-
-            {/* Mobile: Credits + Theme Toggle + Menu */}
-            <div className="flex items-center gap-2 md:hidden">
-              {userProfile && (
-                <Link
-                  href="/credits"
-                  className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl"
-                  title="Available Credits"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 fill-amber-400" />
-                  <span className="font-extrabold text-xs text-amber-800 dark:text-amber-300 tabular-nums">
-                    {creditToShow}
+            {/* Processing Credits */}
+            {userProfile && (
+              <Link
+                href="/credits"
+                className="bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded-xl text-xs flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-200 transition"
+                title={isUnlimited ? "Unlimited AI Scans Active" : "Available Credits"}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                {isUnlimited ? (
+                  <span className="font-semibold text-xs flex items-center gap-1">
+                    <span className="font-mono font-bold">∞</span>
+                    <span className="hidden sm:inline">Unlimited scans</span>
                   </span>
-                </Link>
-              )}
-
-              <ThemeToggle />
-
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-                aria-label="Toggle menu"
-              >
-                {mobileMenuOpen ? (
-                  <X className="w-5 h-5" />
                 ) : (
-                  <Menu className="w-5 h-5" />
+                  <span className="font-medium text-xs flex items-center gap-1">
+                    <span className="font-mono font-bold text-slate-900 dark:text-white tabular-nums">
+                      {userProfile?.credits ?? 0}
+                    </span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:inline">
+                      scans left
+                    </span>
+                  </span>
                 )}
-              </button>
-            </div>
+              </Link>
+            )}
+
+            <ThemeToggle />
+            <div className="w-px h-5 bg-slate-200 dark:bg-slate-800 mx-1 hidden sm:block" />
+            <LoginButton />
           </div>
         </div>
-      </header>
-
-      {/* Mobile Drawer Menu */}
-      {mobileMenuOpen && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 md:hidden"
-            onClick={() => setMobileMenuOpen(false)}
-          />
-          <div className="fixed inset-x-0 top-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-2xl z-50 md:hidden animate-slide-up">
-            <div className="px-4 py-5 space-y-2.5">
-              {mainNavItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3.5 w-full px-3.5 py-3 rounded-2xl transition-all ${
-                    isActive(item.href)
-                      ? "bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 font-semibold"
-                      : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-                  }`}
-                >
-                  <div className="w-9 h-9 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center">
-                    {item.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm">{item.label}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {item.label === "GSTR-1" && "Sales & Outward return"}
-                      {item.label === "GSTR-3B" && "Tax liability & ITC summary"}
-                    </p>
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-slate-400" />
-                </Link>
-              ))}
-
-              <Link
-                href={mobileOnlyNavItem.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-3.5 w-full px-3.5 py-3 rounded-2xl transition-all ${
-                  isActive(mobileOnlyNavItem.href)
-                    ? "bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 font-semibold"
-                    : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-                }`}
-              >
-                <div className="w-9 h-9 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl flex items-center justify-center">
-                  {mobileOnlyNavItem.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm">{mobileOnlyNavItem.label}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">GSTIN, Business Profile & Backup</p>
-                </div>
-                <ArrowRight className="w-4 h-4 text-slate-400" />
-              </Link>
-
-              {/* Mobile Sync Status */}
-              {userProfile?.subscription?.active && (
-                <div className="px-3.5 py-2 text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                  {lastSyncTime}
-                </div>
-              )}
-
-              <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
-                <LoginButton />
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-    </>
+      </div>
+    </header>
   );
 }

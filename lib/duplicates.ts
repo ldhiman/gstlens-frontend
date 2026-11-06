@@ -104,14 +104,24 @@ export function checkDuplicateInvoice(
   existingInvoices: StoredInvoiceRef[],
   excludeLocalId?: string
 ): DuplicateCheckResult {
-  const candSeller = normalizeGSTIN(candidateData?.seller_gstin);
-  const candInvNum = normalizeInvoiceNumber(candidateData?.invoice_number);
-  const candDate = candidateData?.invoice_date;
+  const candSeller = normalizeGSTIN(
+    candidateData?.seller_gstin || candidateData?.supplierGstin || candidateData?.sellerGstin
+  );
+  const candInvNum = normalizeInvoiceNumber(
+    candidateData?.invoice_number || candidateData?.invoiceNumber || candidateData?.invoice_no
+  );
+  const candDate = candidateData?.invoice_date || candidateData?.date;
   const candFY = getFinancialYear(candDate);
-  const candTotal = Number(candidateData?.invoice_total || 0);
+  const candTotal = Number(
+    candidateData?.invoice_total ??
+    candidateData?.totals?.grandTotal ??
+    candidateData?.grand_total ??
+    candidateData?.total ??
+    0
+  );
 
-  // If both seller GSTIN and invoice number are missing, we cannot establish duplication
-  if (!candSeller && !candInvNum) {
+  // If neither invoice number nor total amount is available, cannot establish duplicate
+  if (!candInvNum && candTotal <= 0 && !candSeller) {
     return {
       isDuplicate: false,
       severity: "none",
@@ -132,17 +142,28 @@ export function checkDuplicateInvoice(
     if (existing.deleted === 1) continue;
     if (excludeLocalId && existing.id === excludeLocalId) continue;
 
-    const existData = existing.data || {};
-    const existSeller = normalizeGSTIN(existData.seller_gstin);
-    const existInvNum = normalizeInvoiceNumber(existData.invoice_number);
-    const existDate = existData.invoice_date;
+    const existData = existing.data || existing || {};
+    const existSeller = normalizeGSTIN(
+      existData.seller_gstin || existData.supplierGstin || existData.sellerGstin
+    );
+    const existInvNum = normalizeInvoiceNumber(
+      existData.invoice_number || existData.invoiceNumber || existData.invoice_no
+    );
+    const existDate = existData.invoice_date || existData.date;
     const existFY = getFinancialYear(existDate);
-    const existTotal = Number(existData.invoice_total || 0);
+    const existTotal = Number(
+      existData.invoice_total ??
+      existData.totals?.grandTotal ??
+      existData.grand_total ??
+      existData.total ??
+      0
+    );
 
     const isSameSeller = candSeller.length > 0 && candSeller === existSeller;
     const isSameInvNum = candInvNum.length > 0 && candInvNum === existInvNum;
     const isSameFY = candFY !== "UNKNOWN_FY" && candFY === existFY;
-    const isSameTotal = candTotal > 0 && Math.abs(candTotal - existTotal) < 0.01;
+    const isSameTotal = candTotal > 0 && existTotal > 0 && Math.abs(candTotal - existTotal) < 1.0;
+    const isSameDate = Boolean(candDate && existDate && candDate === existDate);
 
     // Severity 1: Exact Match on Seller GSTIN + Invoice Number + Financial Year
     // Under Rule 46(b), this is a definitive statutory duplicate!
@@ -154,7 +175,7 @@ export function checkDuplicateInvoice(
         existingInvoice: existing,
         existingLocalId: existing.id,
         financialYear: candFY,
-        warningMessage: `Statutory Duplicate Alert: Invoice #${candInvNum} from supplier ${candSeller} already exists in FY ${candFY} (Saved: ${existing.data?.invoice_date || "earlier"}). Duplicate booking violates Section 16(2) of the CGST Act.`,
+        warningMessage: `Statutory Duplicate Alert: Invoice #${candInvNum} from supplier ${candSeller} already exists in FY ${candFY} (Saved: ${existDate || "earlier"}). Duplicate booking violates Section 16(2) of the CGST Act.`,
         matchedFields: {
           sellerGstin: true,
           invoiceNumber: true,
@@ -177,14 +198,52 @@ export function checkDuplicateInvoice(
         matchedFields: {
           sellerGstin: true,
           invoiceNumber: true,
-          financialYear: false,
+          financialYear: isSameFY,
           totalAmount: isSameTotal,
         },
       };
     }
 
-    // Severity 3: Same Seller + Same Total Amount + Same Date (even if OCR misread invoice number slightly)
-    if (isSameSeller && isSameTotal && candDate && candDate === existDate && candTotal > 0) {
+    // Severity 3: Same Invoice Number + Same Total Amount (even if seller GSTIN is omitted/unrecognized)
+    if (isSameInvNum && isSameTotal) {
+      return {
+        isDuplicate: true,
+        severity: "high",
+        duplicateType: "same_seller_and_number",
+        existingInvoice: existing,
+        existingLocalId: existing.id,
+        financialYear: candFY,
+        warningMessage: `Duplicate Warning: Invoice #${candInvNum} with amount ₹${candTotal.toFixed(2)} already exists in your records (Saved date: ${existDate || "-"}).`,
+        matchedFields: {
+          sellerGstin: isSameSeller,
+          invoiceNumber: true,
+          financialYear: isSameFY,
+          totalAmount: true,
+        },
+      };
+    }
+
+    // Severity 4: Same Invoice Number + Same Date (or same FY)
+    if (isSameInvNum && (isSameDate || isSameFY)) {
+      return {
+        isDuplicate: true,
+        severity: "high",
+        duplicateType: "exact_fy_match",
+        existingInvoice: existing,
+        existingLocalId: existing.id,
+        financialYear: candFY,
+        warningMessage: `Duplicate Warning: Invoice #${candInvNum} already exists in your records (${existDate || "FY " + existFY}).`,
+        matchedFields: {
+          sellerGstin: isSameSeller,
+          invoiceNumber: true,
+          financialYear: isSameFY,
+          totalAmount: isSameTotal,
+        },
+      };
+    }
+
+    // Severity 5: Same Seller + Same Total Amount + Same Date
+    if (isSameSeller && isSameTotal && candDate && isSameDate && candTotal > 0) {
       return {
         isDuplicate: true,
         severity: "medium",
@@ -195,7 +254,26 @@ export function checkDuplicateInvoice(
         warningMessage: `Potential Duplicate: An invoice from ${candSeller} with exact amount ₹${candTotal.toFixed(2)} on date ${candDate} already exists (#${existInvNum || "Unknown"}). Verify if this document has already been processed.`,
         matchedFields: {
           sellerGstin: true,
-          invoiceNumber: false,
+          invoiceNumber: isSameInvNum,
+          financialYear: isSameFY,
+          totalAmount: true,
+        },
+      };
+    }
+
+    // Severity 6: Same Total Amount + Same Date (when total > 0)
+    if (isSameTotal && isSameDate && candTotal > 0) {
+      return {
+        isDuplicate: true,
+        severity: "medium",
+        duplicateType: "identical_amounts",
+        existingInvoice: existing,
+        existingLocalId: existing.id,
+        financialYear: candFY,
+        warningMessage: `Potential Duplicate: An invoice with exact amount ₹${candTotal.toFixed(2)} and date ${candDate} already exists in your records (#${existInvNum || "Unknown"}).`,
+        matchedFields: {
+          sellerGstin: isSameSeller,
+          invoiceNumber: isSameInvNum,
           financialYear: isSameFY,
           totalAmount: true,
         },

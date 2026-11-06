@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
+import Link from "next/link";
 import {
   Upload,
   FileText,
@@ -21,13 +22,36 @@ import {
   Plus,
   FileCode,
   Layers,
+  ShoppingCart,
+  Clock,
+  Edit3,
+  ArrowRight,
+  ShieldCheck,
+  AlertTriangle,
+  AlertCircle,
+  ArrowUpRight,
+  ArrowDownRight,
+  Percent,
+  MessageSquare,
+  Eye,
+  Share2,
+  Send,
+  Calendar,
 } from "lucide-react";
 
 import { SYNC_EVENT } from "@/lib/constants";
 import { uploadInvoice, fetchGSTInfo } from "@/lib/api";
 import InvoiceReviewModal from "@/components/InvoiceReviewModal";
 import { getAPPSettings } from "@/lib/settings";
-import { saveInvoiceDraft, getAllInvoices, deleteInvoice } from "@/lib/storage";
+import {
+  saveInvoiceDraft,
+  getAllInvoices,
+  deleteInvoice,
+  getAllPurchases,
+  getAllProducts,
+  type PurchaseBill,
+  type Product,
+} from "@/lib/storage";
 import UploadingModal from "@/components/UploadingModal";
 import EditInvoiceModal from "@/components/InvoiceEditModal";
 import BatchUploadModal from "@/components/BatchUploadModal";
@@ -42,6 +66,14 @@ import {
   stopBackgroundSync,
 } from "@/lib/sync";
 import { formatINR } from "@/lib/currency";
+import {
+  extractInvoiceTotal,
+  extractInvoiceTaxable,
+  extractInvoiceTax,
+  extractCustomerName,
+} from "@/lib/gstBillingEngine";
+import { checkDuplicateInvoice } from "@/lib/duplicates";
+import toast from "react-hot-toast";
 
 /* ---------------- Types ---------------- */
 
@@ -50,6 +82,7 @@ type InvoiceUI = {
   name: string;
   date: string;
   amount: string;
+  taxable: string;
   gst: string;
   status: string;
   raw: any;
@@ -112,14 +145,14 @@ function FilePreviewModal({
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 py-3.5 border border-gray-200 text-gray-700 font-semibold rounded-2xl hover:bg-gray-50 active:scale-98 transition"
+              className="flex-1 py-3 border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 active:scale-98 transition text-sm"
             >
               Cancel
             </button>
             <button
               disabled={isCompressing}
               onClick={() => onConfirm(file)}
-              className="flex-1 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-2xl shadow-lg shadow-indigo-500/25 active:scale-98 transition flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-xs active:scale-98 transition flex items-center justify-center gap-2 text-sm"
             >
               {isCompressing ? (
                 <>
@@ -186,6 +219,11 @@ async function compressImageIfNeeded(file: File): Promise<File> {
 
 export default function Home() {
   const [invoices, setInvoices] = useState<InvoiceUI[]>([]);
+  const [purchases, setPurchases] = useState<PurchaseBill[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [dismissedWarnings, setDismissedWarnings] = useState<Record<string, boolean>>({});
+  const [mobileTab, setMobileTab] = useState<"invoices" | "purchases">("invoices");
+  const [timeRange, setTimeRange] = useState<"all" | "month" | "30d" | "quarter">("all");
   const [isUploading, setIsUploading] = useState(false);
   const [reviewInvoice, setReviewInvoice] = useState<any>(null);
   const [editInvoice, setEditInvoice] = useState<any>(null);
@@ -193,7 +231,7 @@ export default function Home() {
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterType, setFilterType] = useState<"all" | "b2b" | "b2c" | "draft" | "confirmed">("all");
+  const [filterType, setFilterType] = useState<"all" | "b2b" | "b2c" | "draft" | "confirmed" | "unpaid" | "paid">("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
@@ -251,9 +289,21 @@ export default function Home() {
   useEffect(() => {
     if (!user || !userProfile) return;
     if (!userProfile.primary_gstin) {
-      router.replace("/profile?require=gstin");
+      router.replace("/settings?tab=profile");
     }
   }, [user, userProfile, router]);
+
+  // Auto-redirect mobile browsers to dedicated mobile experience
+  useEffect(() => {
+    function checkMobile() {
+      if (typeof window !== "undefined" && window.innerWidth < 768) {
+        router.replace("/mobile");
+      }
+    }
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, [router]);
 
   // Load Invoices
   useEffect(() => {
@@ -281,14 +331,21 @@ export default function Home() {
   }, []);
 
   async function loadInvoices() {
-    const stored = await getAllInvoices();
+    const [stored, storedPurchases, storedProducts] = await Promise.all([
+      getAllInvoices(),
+      getAllPurchases().catch(() => []),
+      getAllProducts().catch(() => []),
+    ]);
     const uiInvoices: InvoiceUI[] = stored.map((r) => {
-      const tax = (r.data.cgst || 0) + (r.data.sgst || 0) + (r.data.igst || 0);
+      const total = extractInvoiceTotal(r.data);
+      const taxable = extractInvoiceTaxable(r.data);
+      const tax = extractInvoiceTax(r.data);
       return {
         id: r.id,
         name: r.data.invoice_number || "Invoice",
         date: r.data.invoice_date || "-",
-        amount: (r.data.invoice_total || 0).toFixed(2),
+        amount: total.toFixed(2),
+        taxable: taxable.toFixed(2),
         gst: tax.toFixed(2),
         status: r.status,
         synced_to_cloud: r.synced_to_cloud,
@@ -299,6 +356,31 @@ export default function Home() {
       };
     });
     setInvoices(uiInvoices.reverse());
+    setPurchases(
+      storedPurchases.sort((a, b) => (b.created_at || 0) - (a.created_at || 0))
+    );
+    setProducts(storedProducts || []);
+  }
+
+  function sendOverdueReminder(inv: InvoiceUI) {
+    const invNum = inv.name;
+    const amount = inv.amount;
+    const party = extractCustomerName(inv.raw);
+    const seller = userProfile?.trade_name || userProfile?.business_name || "Our Business";
+    const text = encodeURIComponent(
+      `*PAYMENT REMINDER*\n\n` +
+      `Dear ${party},\n` +
+      `This is a gentle reminder regarding payment for invoice *${invNum}* dated ${inv.date}.\n\n` +
+      `• *Amount Due:* ₹${Number(amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}\n` +
+      `• *Status:* Payment Pending\n\n` +
+      `Please clear the outstanding balance at your earliest convenience.\n` +
+      `Thank you,\n*${seller}*`
+    );
+    const phone = (inv.raw?.buyer?.phone || inv.raw?.client?.phone || "").replace(/[^0-9]/g, "");
+    const url = phone.length >= 10
+      ? `https://api.whatsapp.com/send?phone=${phone.startsWith("91") ? phone : "91" + phone}&text=${text}`
+      : `https://api.whatsapp.com/send?text=${text}`;
+    window.open(url, "_blank");
   }
 
   // File selection
@@ -409,13 +491,25 @@ export default function Home() {
       data.seller_gstin_info = seller_gstin_info ?? undefined;
       data.buyer_gstin_info = buyer_gstin_info ?? undefined;
 
-      if (settings.autoSave) {
+      // Duplicate Check
+      const storedInvoices = await getAllInvoices();
+      const dupCheck = checkDuplicateInvoice(data, storedInvoices);
+      if (dupCheck.isDuplicate) {
+        data.duplicate_warning = dupCheck.warningMessage;
+        toast.error(dupCheck.warningMessage, {
+          duration: 7000,
+        });
+      }
+
+      if (settings.autoSave && !dupCheck.isDuplicate) {
         await saveInvoiceDraft(data, "auto_saved");
         await loadInvoices();
+        toast.success("Invoice saved automatically!");
       } else {
         const localId = await saveInvoiceDraft(data, "draft");
         setReviewInvoice({
           ...data,
+          duplicate_warning: dupCheck.isDuplicate ? dupCheck.warningMessage : undefined,
           _local_id: localId,
         });
       }
@@ -564,192 +658,588 @@ export default function Home() {
     }
   };
 
+  // Date range helper for Zoho Books style period filtering
+  function isDateInPeriod(dateStr: string | undefined, period: "all" | "month" | "30d" | "quarter"): boolean {
+    if (period === "all" || !dateStr || dateStr === "-") return true;
+    const parts = String(dateStr).trim().split(/[-/.]/);
+    if (parts.length < 3) return true;
+    let d: Date;
+    if (parts[0].length === 4) {
+      d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    } else if (parts[2].length === 4) {
+      d = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+    } else {
+      return true;
+    }
+    if (isNaN(d.getTime())) return true;
+
+    const now = new Date();
+    if (period === "30d") {
+      const diff = (now.getTime() - d.getTime()) / (1000 * 3600 * 24);
+      return diff >= 0 && diff <= 30;
+    }
+    if (period === "month") {
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }
+    if (period === "quarter") {
+      const currentQ = Math.floor(now.getMonth() / 3);
+      const dateQ = Math.floor(d.getMonth() / 3);
+      return dateQ === currentQ && d.getFullYear() === now.getFullYear();
+    }
+    return true;
+  }
+
   // Filtered invoices computation
   const filteredInvoices = useMemo(() => {
     return invoices.filter((inv) => {
+      if (!isDateInPeriod(inv.date || inv.raw?.invoice_date, timeRange)) return false;
+
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchName = inv.name.toLowerCase().includes(q);
-        const matchBuyerGstin = (inv.raw.buyer_gstin || "").toLowerCase().includes(q);
-        const matchSellerGstin = (inv.raw.seller_gstin || "").toLowerCase().includes(q);
-        const matchTradeName = (inv.raw.buyer_gstin_info?.trade_name || "").toLowerCase().includes(q);
+        const matchBuyerGstin = (inv.raw?.buyer_gstin || "").toLowerCase().includes(q);
+        const matchSellerGstin = (inv.raw?.seller_gstin || "").toLowerCase().includes(q);
+        const matchTradeName = (inv.raw?.buyer_gstin_info?.trade_name || extractCustomerName(inv.raw)).toLowerCase().includes(q);
         if (!matchName && !matchBuyerGstin && !matchSellerGstin && !matchTradeName) return false;
       }
 
-      if (filterType === "b2b") return inv.raw.invoice_type === "B2B";
-      if (filterType === "b2c") return inv.raw.invoice_type === "B2C";
+      if (filterType === "b2b") return inv.raw?.invoice_type === "B2B";
+      if (filterType === "b2c") return inv.raw?.invoice_type === "B2C";
       if (filterType === "draft") return inv.status === "draft";
       if (filterType === "confirmed") return inv.status === "confirmed";
+      if (filterType === "unpaid") {
+        return (inv.raw?.payment_status || inv.raw?.paymentStatus || "Unpaid") !== "Paid";
+      }
+      if (filterType === "paid") {
+        return (inv.raw?.payment_status || inv.raw?.paymentStatus || "Unpaid") === "Paid";
+      }
 
       return true;
     });
-  }, [invoices, searchQuery, filterType]);
+  }, [invoices, searchQuery, filterType, timeRange]);
 
-  const totalAmount = invoices.reduce((s, i) => s + Number(i.amount), 0);
-  const totalTax = invoices.reduce((s, i) => s + Number(i.gst), 0);
+  // Filtered purchases computation
+  const filteredPurchases = useMemo(() => {
+    return purchases.filter((p) => {
+      if (!isDateInPeriod(p.date, timeRange)) return false;
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchNumber = (p.invoiceNumber || "").toLowerCase().includes(q);
+        const matchSupplier = (p.supplierName || "").toLowerCase().includes(q);
+        const matchGstin = (p.supplierGstin || "").toLowerCase().includes(q);
+        if (!matchNumber && !matchSupplier && !matchGstin) return false;
+      }
+      if (filterType === "unpaid") {
+        return (p.paymentStatus || "Unpaid") !== "Paid";
+      }
+      if (filterType === "paid") {
+        return (p.paymentStatus || "Unpaid") === "Paid";
+      }
+      return true;
+    });
+  }, [purchases, searchQuery, filterType, timeRange]);
+
+
+  // Financial aggregates (calculated across current time range)
+  const periodInvoices = useMemo(() => {
+    return invoices.filter((inv) => isDateInPeriod(inv.date || inv.raw?.invoice_date, timeRange));
+  }, [invoices, timeRange]);
+
+  const periodPurchases = useMemo(() => {
+    return purchases.filter((p) => isDateInPeriod(p.date, timeRange));
+  }, [purchases, timeRange]);
+
+  const totalAmount = periodInvoices.reduce((s, i) => s + Number(i.amount), 0);
+  const totalTax = periodInvoices.reduce((s, i) => s + Number(i.gst), 0);
+  const totalTaxable = Math.max(0, totalAmount - totalTax);
+
+  const totalPurchases = periodPurchases.reduce(
+    (s, p) => s + (Number(p.total) || 0),
+    0
+  );
+  const totalITC = periodPurchases
+    .filter(
+      (p) =>
+        p.itcEligibility === "eligible" || p.itcEligibility === "capital_goods"
+    )
+    .reduce(
+      (s, p) =>
+        s +
+        ((Number(p.cgst) || 0) +
+          (Number(p.sgst) || 0) +
+          (Number(p.igst) || 0) +
+          (Number(p.cess) || 0)),
+      0
+    );
+
+  const netGstPayable = Math.max(0, totalTax - totalITC);
+  const surplusITC = Math.max(0, totalITC - totalTax);
+
+  const unpaidSalesInvoices = useMemo(() => {
+    return invoices.filter(
+      (i) => (i.raw?.payment_status || i.raw?.paymentStatus || "Unpaid") !== "Paid"
+    );
+  }, [invoices]);
+
+  const unpaidSales = unpaidSalesInvoices.reduce((s, i) => s + Number(i.amount), 0);
+
+  const unpaidPurchasesList = useMemo(() => {
+    return purchases.filter((p) => (p.paymentStatus || "Unpaid") !== "Paid");
+  }, [purchases]);
+
+  const unpaidPurchases = unpaidPurchasesList.reduce(
+    (s, p) => s + (Number(p.total) || 0),
+    0
+  );
+
+  const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+  const overdueInvoices = useMemo(() => {
+    return invoices.filter((inv) => {
+      const isPaid = (inv.raw?.payment_status || inv.raw?.paymentStatus || "Unpaid") === "Paid";
+      if (isPaid) return false;
+      const due = inv.raw?.due_date || inv.raw?.dueDate;
+      if (!due) return false;
+      const parts = String(due).trim().split(/[-/.]/);
+      if (parts.length < 3) return false;
+      let parsedDue = "";
+      if (parts[0].length === 4) {
+        parsedDue = `${parts[0]}-${parts[1].padStart(2, "0")}-${parts[2].padStart(2, "0")}`;
+      } else if (parts[2].length === 4) {
+        parsedDue = `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+      }
+      return Boolean(parsedDue && parsedDue < todayStr);
+    });
+  }, [invoices, todayStr]);
+
+  const overdueSalesAmount = useMemo(() => {
+    return overdueInvoices.reduce((s, i) => s + Number(i.amount), 0);
+  }, [overdueInvoices]);
+
+  const lowStockProducts = useMemo(() => {
+    return products.filter(
+      (p) => !p.isService && Number(p.stock ?? 0) <= Number(p.minStockAlert ?? 5)
+    );
+  }, [products]);
+
+  // Zoho Books style Receivables Aging Breakdown (0-30, 31-60, 60+ days)
+  const aging = useMemo(() => {
+    const todayMs = Date.now();
+    let current_0_30 = 0;
+    let count_0_30 = 0;
+    let overdue_31_60 = 0;
+    let count_31_60 = 0;
+    let overdue_60_plus = 0;
+    let count_60_plus = 0;
+
+    invoices.forEach((inv) => {
+      const isPaid = (inv.raw?.payment_status || inv.raw?.paymentStatus || "Unpaid") === "Paid";
+      if (isPaid) return;
+      const amt = Number(inv.amount) || 0;
+      const due = inv.raw?.due_date || inv.raw?.dueDate || inv.date;
+      let diffDays = 0;
+      if (due && due !== "-") {
+        const parts = String(due).trim().split(/[-/.]/);
+        if (parts.length >= 3) {
+          let dueMs = 0;
+          if (parts[0].length === 4) {
+            dueMs = new Date(`${parts[0]}-${parts[1]}-${parts[2]}`).getTime();
+          } else if (parts[2].length === 4) {
+            dueMs = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).getTime();
+          }
+          if (dueMs > 0) {
+            diffDays = Math.floor((todayMs - dueMs) / (1000 * 60 * 60 * 24));
+          }
+        }
+      }
+
+      if (diffDays <= 30) {
+        current_0_30 += amt;
+        count_0_30++;
+      } else if (diffDays <= 60) {
+        overdue_31_60 += amt;
+        count_31_60++;
+      } else {
+        overdue_60_plus += amt;
+        count_60_plus++;
+      }
+    });
+
+    const totalReceivables = current_0_30 + overdue_31_60 + overdue_60_plus;
+    return {
+      current_0_30,
+      count_0_30,
+      overdue_31_60,
+      count_31_60,
+      overdue_60_plus,
+      count_60_plus,
+      totalReceivables,
+    };
+  }, [invoices]);
+
+  // 6-Month Cash Flow & Trend Calculation
+  const monthlyCashFlow = useMemo(() => {
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const now = new Date();
+    const months: { key: string; label: string; year: number; month: number; sales: number; purchases: number }[] = [];
+
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const y = d.getFullYear();
+      const m = d.getMonth();
+      const key = `${y}-${String(m + 1).padStart(2, "0")}`;
+      months.push({
+        key,
+        label: `${monthNames[m]} '${String(y).slice(2)}`,
+        year: y,
+        month: m,
+        sales: 0,
+        purchases: 0,
+      });
+    }
+
+    invoices.forEach((inv) => {
+      const dateStr = inv.date || inv.raw?.invoice_date || inv.raw?.invoiceDate;
+      if (!dateStr || dateStr === "-") return;
+      const parts = String(dateStr).trim().split(/[-/.]/);
+      if (parts.length < 3) return;
+      let y = 0, m = 0;
+      if (parts[0].length === 4) {
+        y = parseInt(parts[0], 10);
+        m = parseInt(parts[1], 10) - 1;
+      } else if (parts[2].length === 4) {
+        y = parseInt(parts[2], 10);
+        m = parseInt(parts[1], 10) - 1;
+      }
+      const found = months.find((mo) => mo.year === y && mo.month === m);
+      if (found) {
+        found.sales += Number(inv.amount) || 0;
+      }
+    });
+
+    purchases.forEach((p) => {
+      const dateStr = p.date || (p as any).invoiceDate;
+      if (!dateStr) return;
+      const parts = String(dateStr).trim().split(/[-/.]/);
+      if (parts.length < 3) return;
+      let y = 0, m = 0;
+      if (parts[0].length === 4) {
+        y = parseInt(parts[0], 10);
+        m = parseInt(parts[1], 10) - 1;
+      } else if (parts[2].length === 4) {
+        y = parseInt(parts[2], 10);
+        m = parseInt(parts[1], 10) - 1;
+      }
+      const found = months.find((mo) => mo.year === y && mo.month === m);
+      if (found) {
+        found.purchases += Number(p.total) || 0;
+      }
+    });
+
+    return months;
+  }, [invoices, purchases]);
+
+  const maxMonthlyVal = useMemo(() => {
+    const vals = monthlyCashFlow.flatMap((m) => [m.sales, m.purchases]);
+    return Math.max(1000, ...vals);
+  }, [monthlyCashFlow]);
+
+  const grossProfit = totalAmount - totalPurchases;
+  const profitMargin = totalAmount > 0 ? ((grossProfit / totalAmount) * 100).toFixed(1) : "0.0";
+  const itcCoverage = totalTax > 0 ? Math.min(100, Math.round((totalITC / totalTax) * 100)) : 100;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
       <Header />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 pb-28">
-        {/* Desktop Quick Dropzone */}
-        <div
-          id="tour-scan-zone"
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => {
-            e.preventDefault();
-            const droppedFiles = Array.from(e.dataTransfer.files || []);
-            if (droppedFiles.length === 1) {
-              handleFileSelect(droppedFiles[0]);
-            } else if (droppedFiles.length > 1) {
-              startBatchUpload(droppedFiles);
-            }
-          }}
-          className="hidden md:flex items-center justify-between p-7 bg-gradient-to-r from-indigo-600 via-indigo-700 to-slate-900 rounded-3xl text-white shadow-xl shadow-indigo-500/15 mb-6 relative overflow-hidden border border-indigo-500/20"
-        >
-          <div className="relative z-10 max-w-xl">
-            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold mb-3">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" /> AI Invoice Extraction & Batch Processing
+        {/* Top Bar: Business Identity & Primary Action Buttons */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 sm:p-5 mb-4 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-colors">
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+                {userProfile?.business_name || userProfile?.trade_name || "My Business"}
+              </h1>
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/80 font-mono">
+                FY 2026-27
+              </span>
+              {userProfile?.primary_gstin && (
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/80 font-mono flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  GSTIN: {userProfile.primary_gstin}
+                </span>
+              )}
             </div>
-            <h2 className="text-2xl font-black tracking-tight">Upload or Snap Invoices</h2>
-            <p className="text-indigo-100/90 text-sm mt-1 leading-relaxed">
-              Drag &amp; drop single or batch invoices (PDF / PNG / JPG). Concurrency pool (3x) extracts numbers, GSTINs, and validates Section 16(2) duplicates automatically.
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+              Billing, purchases, and customer collections
             </p>
           </div>
-          <div className="relative z-10 flex items-center gap-3">
+
+          {/* Primary Action Buttons */}
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <Link
+              href="/invoices/new"
+              className="flex-1 sm:flex-initial py-2 px-3.5 sm:px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Sale</span>
+            </Link>
             <button
+              type="button"
               onClick={() => uploadRef.current?.click()}
-              className="px-5 py-3 rounded-2xl bg-white text-indigo-700 font-bold text-sm shadow-md hover:bg-indigo-50 active:scale-95 transition flex items-center gap-2"
+              className="flex-1 sm:flex-initial py-2 px-3.5 sm:px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <Upload className="w-4 h-4" /> Upload Files
+              <Camera className="w-3.5 h-3.5" />
+              <span>Add Purchase</span>
             </button>
             <button
-              onClick={() => captureRef.current?.click()}
-              className="px-5 py-3 rounded-2xl bg-indigo-950/70 hover:bg-indigo-900 text-white font-semibold text-sm border border-white/20 active:scale-95 transition flex items-center gap-2"
+              type="button"
+              onClick={() => setShowTallyModal(true)}
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition"
+              title="Export to Tally XML"
             >
-              <Camera className="w-4 h-4" /> Camera
+              <FileCode className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={loadDemoSampleInvoice}
+              className="p-2 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 transition"
+              title="Load demo sample bill"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
-        {/* Metrics Row */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-5 mb-6">
-          <StatCard
-            title="Total Invoices"
-            value={invoices.length}
-            icon={<FileText className="w-5 h-5 sm:w-6 sm:h-6" />}
-            gradient="from-blue-600 to-indigo-600"
-            bg="bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800"
-          />
-          <StatCard
-            title="Taxable Sales"
-            value={formatINR(Math.max(0, totalAmount - totalTax))}
-            icon={<DollarSign className="w-5 h-5 sm:w-6 sm:h-6" />}
-            gradient="from-emerald-600 to-teal-600"
-            bg="bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800"
-          />
-          <div className="col-span-2 md:col-span-1">
-            <StatCard
-              title="Total GST (Output)"
-              value={formatINR(totalTax)}
-              icon={<TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />}
-              gradient="from-purple-600 to-indigo-600"
-              bg="bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800"
-            />
+        {/* 4 Primary Business Metric Tiles (Compact) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 mb-4">
+          {/* Card 1: To Collect */}
+          <div
+            onClick={() => {
+              setMobileTab("invoices");
+              setFilterType("unpaid");
+            }}
+            className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-400/60 dark:hover:border-emerald-600/60 rounded-xl p-3.5 sm:p-4 shadow-xs transition-all cursor-pointer group"
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                You&apos;ll Get (To Collect)
+              </span>
+              <div className="w-6 h-6 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <ArrowDownRight className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <p className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">
+              {formatINR(unpaidSales)}
+            </p>
+            <p className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+              <span>{unpaidSalesInvoices.length} unpaid customer bills</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">• Filter</span>
+            </p>
           </div>
+
+          {/* Card 2: To Pay */}
+          <div
+            onClick={() => {
+              setMobileTab("purchases");
+              setFilterType("unpaid");
+            }}
+            className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-rose-400/60 dark:hover:border-rose-600/60 rounded-xl p-3.5 sm:p-4 shadow-xs transition-all cursor-pointer group"
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                You&apos;ll Give (To Pay)
+              </span>
+              <div className="w-6 h-6 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <p className="text-xl sm:text-2xl font-bold text-rose-600 dark:text-rose-400 font-mono tracking-tight">
+              {formatINR(unpaidPurchases)}
+            </p>
+            <p className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+              <span>{unpaidPurchasesList.length} vendor bills pending</span>
+              <span className="text-rose-600 dark:text-rose-400 font-semibold">• View</span>
+            </p>
+          </div>
+
+          {/* Card 3: Total Sales */}
+          <div
+            onClick={() => {
+              setMobileTab("invoices");
+              setFilterType("all");
+            }}
+            className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-400/60 dark:hover:border-indigo-600/60 rounded-xl p-3.5 sm:p-4 shadow-xs transition-all cursor-pointer group"
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                Total Sales
+              </span>
+              <div className="w-6 h-6 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                <TrendingUp className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white font-mono tracking-tight">
+              {formatINR(totalAmount)}
+            </p>
+            <p className="text-[10px] text-slate-400 mt-1">
+              {invoices.length} invoices recorded
+            </p>
+          </div>
+
+          {/* Card 4: Net GST to Pay */}
+          <Link
+            href="/gstr-3b"
+            className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-purple-400/60 dark:hover:border-purple-600/60 rounded-xl p-3.5 sm:p-4 shadow-xs transition-all cursor-pointer group block"
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                {netGstPayable > 0 ? "Net GST to Pay" : "Surplus Tax Credit"}
+              </span>
+              <div className="w-6 h-6 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                <ShieldCheck className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <p className="text-xl sm:text-2xl font-bold text-purple-600 dark:text-purple-400 font-mono tracking-tight">
+              {netGstPayable > 0 ? formatINR(netGstPayable) : formatINR(surplusITC)}
+            </p>
+            <p className="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
+              <span>ITC: {formatINR(totalITC)}</span>
+              <span className="text-purple-600 dark:text-purple-400 font-semibold group-hover:translate-x-0.5 transition">
+                GSTR-3B &rarr;
+              </span>
+            </p>
+          </Link>
         </div>
 
-        {/* Quick Actions for Returns & Accounting (Desktop Only to keep Mobile clean & uncluttered) */}
-        <div className="hidden md:grid md:grid-cols-3 gap-4 mb-6">
-          <ActionCard
-            title="GSTR-1 Outward Return"
-            description="Download portal-ready JSON for B2B & B2C sales"
-            icon={<FileText className="w-5 h-5 sm:w-6 sm:h-6" />}
-            gradient="from-blue-600 to-indigo-600"
-            onClick={() => router.push("/gstr-1")}
-          />
-          <ActionCard
-            title="GSTR-3B Monthly Return"
-            description="Summary of output tax liability and tax payable"
-            icon={<FileCheckCorner className="w-5 h-5 sm:w-6 sm:h-6" />}
-            gradient="from-purple-600 to-indigo-600"
-            onClick={() => router.push("/gstr-3b")}
-          />
-          <ActionCard
-            title="Tally Prime XML Export"
-            description="1-Click accounting import for Sales & Purchase vouchers"
-            icon={<FileCode className="w-5 h-5 sm:w-6 sm:h-6" />}
-            gradient="from-amber-600 to-orange-600"
-            onClick={() => setShowTallyModal(true)}
-          />
-        </div>
+        {/* Alerts (Only when actionable items exist) */}
+        {((overdueInvoices.length > 0 && !dismissedWarnings["overdue"]) ||
+          (lowStockProducts.length > 0 && !dismissedWarnings["lowStock"])) && (
+          <div className="space-y-2 mb-4">
+            {overdueInvoices.length > 0 && !dismissedWarnings["overdue"] && (
+              <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl px-3.5 py-2 flex items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span>
+                    <strong>{overdueInvoices.length} {overdueInvoices.length === 1 ? "bill" : "bills"} overdue</strong> ({formatINR(overdueSalesAmount)}) past due date
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {overdueInvoices[0] && (
+                    <button
+                      onClick={() => sendOverdueReminder(overdueInvoices[0])}
+                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold text-[11px] flex items-center gap-1 transition active:scale-95 cursor-pointer"
+                    >
+                      <MessageSquare className="w-3 h-3" />
+                      <span>WhatsApp Reminder</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setDismissedWarnings((prev) => ({ ...prev, overdue: true }))}
+                    className="p-1 text-amber-500 hover:text-amber-700 dark:hover:text-amber-300"
+                    title="Dismiss"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            )}
 
-        {/* Invoice List Section */}
-        <div id="tour-invoice-list" className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
-          {/* Section Header with Live Search and Filters */}
-          <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">Recorded Invoices</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                {filteredInvoices.length} of {invoices.length} invoices shown
-              </p>
+            {lowStockProducts.length > 0 && !dismissedWarnings["lowStock"] && (
+              <div className="bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/60 rounded-xl px-3.5 py-2 flex items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2 text-orange-900 dark:text-orange-200">
+                  <AlertCircle className="w-3.5 h-3.5 text-orange-600 shrink-0" />
+                  <span>
+                    <strong>{lowStockProducts.length} items low in stock</strong> ({lowStockProducts.slice(0, 2).map((p) => p.name).join(", ")}{lowStockProducts.length > 2 ? ` +${lowStockProducts.length - 2} more` : ""})
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Link
+                    href="/inventory"
+                    className="px-2.5 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold text-[11px] flex items-center gap-1 transition active:scale-95"
+                  >
+                    <span>Manage Stock</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                  <button
+                    onClick={() => setDismissedWarnings((prev) => ({ ...prev, lowStock: true }))}
+                    className="p-1 text-orange-500 hover:text-orange-700 dark:hover:text-orange-300"
+                    title="Dismiss"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Transaction Ledger */}
+        <div id="tour-invoice-list" className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs overflow-hidden transition-colors">
+          {/* Header with 2 Tabs and Search */}
+          <div className="p-3 sm:px-4 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2">
+              <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => setMobileTab("invoices")}
+                  className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
+                    mobileTab === "invoices"
+                      ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-2xs font-bold"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Sales Invoices ({invoices.length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobileTab("purchases")}
+                  className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
+                    mobileTab === "purchases"
+                      ? "bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-2xs font-bold"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                  }`}
+                >
+                  <ShoppingCart className="w-3.5 h-3.5" />
+                  <span>Purchase Bills ({purchases.length})</span>
+                </button>
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Search Bar */}
-              <div className="relative flex-1 sm:w-64">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Search invoice or GSTIN..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-
-              {/* Tally XML Quick Export */}
-              <button
-                onClick={() => setShowTallyModal(true)}
-                className="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-semibold flex items-center gap-1.5 transition"
-                title="Export vouchers to Tally Prime XML"
-              >
-                <FileCode className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                Tally XML
-              </button>
-
-              {/* Try Demo Bill Action */}
-              <button
-                onClick={loadDemoSampleInvoice}
-                className="px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-xs font-semibold flex items-center gap-1.5 transition"
-                title="Load a demo invoice to test instantly"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                Demo Bill
-              </button>
+            {/* Search Bar */}
+            <div className="relative flex-1 sm:w-64">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search party, invoice #, GSTIN..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
             </div>
           </div>
 
           {/* Filter Chips Bar */}
-          <div className="px-4 py-2.5 bg-slate-50/60 dark:bg-slate-950/40 border-b border-slate-100 dark:border-slate-800 flex items-center gap-1.5 overflow-x-auto text-xs">
+          <div className="px-4 py-2 bg-slate-50/60 dark:bg-slate-950/40 border-b border-slate-100 dark:border-slate-800 flex items-center gap-1.5 overflow-x-auto text-xs">
             <span className="text-slate-400 font-medium mr-1 flex items-center gap-1">
               <Filter className="w-3.5 h-3.5" /> Filter:
             </span>
             {[
               { id: "all", label: "ALL" },
+              { id: "unpaid", label: "UNPAID" },
+              { id: "paid", label: "PAID" },
               { id: "b2b", label: "B2B" },
               { id: "b2c", label: "B2C" },
-              { id: "confirmed", label: "CONFIRMED" },
-              { id: "draft", label: "DRAFT" },
             ].map((opt) => (
               <button
                 key={opt.id}
@@ -757,7 +1247,7 @@ export default function Home() {
                   setFilterType(opt.id as any);
                   setCurrentPage(1);
                 }}
-                className={`px-3.5 py-1 rounded-full font-bold text-xs tracking-wider transition-all ${
+                className={`px-3.5 py-1 rounded-full font-bold text-xs tracking-wider transition-all cursor-pointer ${
                   filterType === opt.id
                     ? "bg-indigo-600 text-white shadow-xs"
                     : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700"
@@ -770,32 +1260,69 @@ export default function Home() {
 
           {/* List or Empty State */}
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
-            {filteredInvoices.length === 0 ? (
-              invoices.length === 0 ? (
-                <EmptyState
-                  onUpload={() => setShowUploadSheet(true)}
-                  onDemo={loadDemoSampleInvoice}
-                />
+            {mobileTab === "invoices" ? (
+              filteredInvoices.length === 0 ? (
+                invoices.length === 0 ? (
+                  <EmptyState
+                    onUpload={() => setShowUploadSheet(true)}
+                    onDemo={loadDemoSampleInvoice}
+                  />
+                ) : (
+                  <div className="py-12 text-center text-slate-500 dark:text-slate-400 text-sm">
+                    No sales invoices match your search query &quot;{searchQuery}&quot;.
+                  </div>
+                )
               ) : (
-                <div className="py-12 text-center text-slate-500 dark:text-slate-400 text-sm">
-                  No invoices match your search query &quot;{searchQuery}&quot;.
-                </div>
+                filteredInvoices
+                  .slice((currentPage - 1) * itemsPerPage, (currentPage - 1) * itemsPerPage + itemsPerPage)
+                  .map((inv) => (
+                    <InvoiceRow
+                      key={inv.id}
+                      invoice={inv}
+                      onClick={() => setReviewInvoice(inv.raw)}
+                      onWhatsApp={() => sendOverdueReminder(inv)}
+                    />
+                  ))
               )
             ) : (
-              filteredInvoices
-                .slice((currentPage - 1) * itemsPerPage, (currentPage - 1) * itemsPerPage + itemsPerPage)
-                .map((inv) => (
-                  <InvoiceRow
-                    key={inv.id}
-                    invoice={inv}
-                    onClick={() => setReviewInvoice(inv.raw)}
-                  />
-                ))
+              filteredPurchases.length === 0 ? (
+                purchases.length === 0 ? (
+                  <div className="py-16 px-6 text-center">
+                    <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <ShoppingCart className="w-8 h-8" />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-1">No Purchase Bills Recorded Yet</h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-xs mb-6 max-w-sm mx-auto">
+                      Scan vendor bills to claim Input Tax Credit (ITC) automatically.
+                    </p>
+                    <button
+                      onClick={() => uploadRef.current?.click()}
+                      className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold text-xs shadow-xs active:scale-98 transition inline-flex items-center gap-2 cursor-pointer"
+                    >
+                      <Camera className="w-4 h-4" /> Scan Purchase Bill
+                    </button>
+                  </div>
+                ) : (
+                  <div className="py-12 text-center text-slate-500 dark:text-slate-400 text-sm">
+                    No purchase bills match your search query &quot;{searchQuery}&quot;.
+                  </div>
+                )
+              ) : (
+                filteredPurchases
+                  .slice((currentPage - 1) * itemsPerPage, (currentPage - 1) * itemsPerPage + itemsPerPage)
+                  .map((p) => (
+                    <PurchaseRow
+                      key={p.id}
+                      purchase={p}
+                      onClick={() => router.push("/purchases")}
+                    />
+                  ))
+              )
             )}
           </div>
 
           {/* Pagination Controls */}
-          {filteredInvoices.length > 0 && (
+          {((mobileTab === "invoices" ? filteredInvoices.length : filteredPurchases.length) > 0) && (
             <div className="p-4 sm:p-5 bg-slate-50/80 dark:bg-slate-950/40 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                 <span>
@@ -805,13 +1332,13 @@ export default function Home() {
                   </span>{" "}
                   to{" "}
                   <span className="font-bold text-slate-900 dark:text-slate-100">
-                    {Math.min(currentPage * itemsPerPage, filteredInvoices.length)}
+                    {Math.min(currentPage * itemsPerPage, mobileTab === "invoices" ? filteredInvoices.length : filteredPurchases.length)}
                   </span>{" "}
                   of{" "}
                   <span className="font-bold text-slate-900 dark:text-slate-100">
-                    {filteredInvoices.length}
+                    {mobileTab === "invoices" ? filteredInvoices.length : filteredPurchases.length}
                   </span>{" "}
-                  invoices
+                  {mobileTab === "invoices" ? "invoices" : "bills"}
                 </span>
                 <span className="text-slate-300 dark:text-slate-700">|</span>
                 <label className="flex items-center gap-1">
@@ -842,13 +1369,13 @@ export default function Home() {
                 </button>
 
                 {Array.from(
-                  { length: Math.max(1, Math.ceil(filteredInvoices.length / itemsPerPage)) },
+                  { length: Math.max(1, Math.ceil((mobileTab === "invoices" ? filteredInvoices.length : filteredPurchases.length) / itemsPerPage)) },
                   (_, i) => i + 1
                 )
                   .filter(
                     (p) =>
                       p === 1 ||
-                      p === Math.ceil(filteredInvoices.length / itemsPerPage) ||
+                      p === Math.ceil((mobileTab === "invoices" ? filteredInvoices.length : filteredPurchases.length) / itemsPerPage) ||
                       Math.abs(p - currentPage) <= 1
                   )
                   .map((page, idx, arr) => {
@@ -875,11 +1402,11 @@ export default function Home() {
                 <button
                   onClick={() =>
                     setCurrentPage((p) =>
-                      Math.min(Math.ceil(filteredInvoices.length / itemsPerPage), p + 1)
+                      Math.min(Math.ceil((mobileTab === "invoices" ? filteredInvoices.length : filteredPurchases.length) / itemsPerPage), p + 1)
                     )
                   }
                   disabled={
-                    currentPage >= Math.ceil(filteredInvoices.length / itemsPerPage)
+                    currentPage >= Math.ceil((mobileTab === "invoices" ? filteredInvoices.length : filteredPurchases.length) / itemsPerPage)
                   }
                   className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
                 >
@@ -1036,36 +1563,80 @@ export default function Home() {
 
 /* ---------------- Subcomponents ---------------- */
 
-function StatCard({ title, value, icon, gradient, bg }: any) {
+function StatCard({
+  title,
+  value,
+  subtitle,
+  icon,
+  badge,
+  badgeColor = "indigo",
+  onClick,
+}: {
+  title: string;
+  value: string;
+  subtitle?: string;
+  icon: React.ReactNode;
+  badge?: string;
+  badgeColor?: "indigo" | "emerald" | "amber" | "rose" | "blue";
+  onClick?: () => void;
+}) {
+  const badgeClasses = {
+    indigo: "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-200/60 dark:border-indigo-800/60",
+    emerald: "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-800/60",
+    amber: "bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200/60 dark:border-amber-800/60",
+    rose: "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200/60 dark:border-rose-800/60",
+    blue: "bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200/60 dark:border-blue-800/60",
+  }[badgeColor];
+
   return (
-    <div className={`${bg} rounded-3xl p-4 sm:p-5 border shadow-xs flex items-center gap-4 transition-colors`}>
-      <div className={`w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-tr ${gradient} rounded-2xl flex items-center justify-center text-white shadow-md flex-shrink-0`}>
-        {icon}
+    <div
+      onClick={onClick}
+      className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between transition-all ${
+        onClick ? "cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 active:scale-98 group" : ""
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+          {icon}
+        </div>
+        {badge && (
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border truncate max-w-[130px] font-mono ${badgeClasses}`}>
+            {badge}
+          </span>
+        )}
       </div>
+
       <div className="min-w-0">
-        <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate">{title}</p>
-        <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-slate-50 tracking-tight truncate tabular-nums font-mono">{value}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate">{title}</p>
+        <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight truncate tabular-nums font-mono mt-0.5">
+          {value}
+        </p>
+        {subtitle && (
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 truncate">
+            {subtitle}
+          </p>
+        )}
       </div>
     </div>
   );
 }
 
-function ActionCard({ title, description, icon, gradient, onClick }: any) {
+function ActionCard({ title, description, icon, onClick }: any) {
   return (
     <button
       onClick={onClick}
-      className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-lg transition-all active:scale-98 text-left group flex items-center justify-between"
+      className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-xs transition-all active:scale-98 text-left group flex items-center justify-between"
     >
-      <div className="flex items-center gap-3.5">
-        <div className={`w-11 h-11 bg-gradient-to-tr ${gradient} rounded-2xl flex items-center justify-center text-white shadow-md`}>
+      <div className="flex items-center gap-3.5 min-w-0">
+        <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center flex-shrink-0">
           {icon}
         </div>
-        <div>
-          <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{title}</h4>
-          <p className="text-xs text-slate-500 dark:text-slate-400">{description}</p>
+        <div className="min-w-0">
+          <h4 className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm truncate">{title}</h4>
+          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{description}</p>
         </div>
       </div>
-      <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
+      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
     </button>
   );
 }
@@ -1073,23 +1644,23 @@ function ActionCard({ title, description, icon, gradient, onClick }: any) {
 function EmptyState({ onUpload, onDemo }: { onUpload: () => void; onDemo: () => void }) {
   return (
     <div className="py-16 px-6 text-center">
-      <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-inner">
-        <FileText className="w-10 h-10" />
+      <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <FileText className="w-8 h-8" />
       </div>
-      <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">No Invoices Added Yet</h3>
-      <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 max-w-sm mx-auto">
+      <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-1">No Invoices Added Yet</h3>
+      <p className="text-slate-500 dark:text-slate-400 text-xs mb-6 max-w-sm mx-auto">
         Scan your first bill or test immediately with a ready-made demo invoice.
       </p>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
         <button
           onClick={onUpload}
-          className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-500/25 hover:shadow-xl active:scale-98 transition flex items-center justify-center gap-2"
+          className="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold text-xs shadow-xs active:scale-98 transition flex items-center justify-center gap-2"
         >
           <Upload className="w-4 h-4" /> Upload First Invoice
         </button>
         <button
           onClick={onDemo}
-          className="w-full sm:w-auto px-6 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-2xl font-bold active:scale-98 transition flex items-center justify-center gap-2"
+          className="w-full sm:w-auto px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl font-semibold text-xs active:scale-98 transition flex items-center justify-center gap-2"
         >
           <Sparkles className="w-4 h-4 text-amber-500" /> Try Sample Bill
         </button>
@@ -1098,26 +1669,48 @@ function EmptyState({ onUpload, onDemo }: { onUpload: () => void; onDemo: () => 
   );
 }
 
-function InvoiceRow({ invoice, onClick }: { invoice: InvoiceUI; onClick: () => void }) {
+function InvoiceRow({
+  invoice,
+  onClick,
+  onWhatsApp,
+}: {
+  invoice: InvoiceUI;
+  onClick: () => void;
+  onWhatsApp?: () => void;
+}) {
   const isConfirmed = invoice.status === "confirmed";
   const isB2B = invoice.raw?.invoice_type === "B2B";
   const isSynced = invoice.synced_to_cloud;
+  const isPaid = (invoice.raw?.payment_status || invoice.raw?.paymentStatus || "Unpaid") === "Paid";
+  const customerName = extractCustomerName(invoice.raw);
+  const initials = customerName
+    ? customerName
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((w: string) => w[0])
+        .join("")
+        .toUpperCase()
+    : "INV";
 
   return (
-    <button
+    <div
       onClick={onClick}
-      className="w-full p-4 sm:p-5 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 active:bg-slate-100/60 dark:active:bg-slate-800 transition-all text-left flex items-center justify-between gap-3 group"
+      className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 hover:bg-slate-50/90 dark:hover:bg-slate-800/60 active:bg-slate-100/70 dark:active:bg-slate-800 transition-all text-left flex items-center justify-between gap-3 group cursor-pointer"
     >
-      <div className="flex items-center gap-3.5 flex-1 min-w-0">
-        <div className="w-11 h-11 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-          <FileCheckCorner className="w-5 h-5" />
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 font-bold text-[11px] flex items-center justify-center shrink-0 border border-indigo-100 dark:border-indigo-900/60 font-mono group-hover:scale-105 transition-transform">
+          {initials}
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate">{invoice.name}</p>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm truncate">
+              {customerName}
+            </p>
+            <span className="text-[11px] text-slate-400 font-mono">({invoice.name})</span>
             <span
-              className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+              className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
                 isB2B
                   ? "bg-blue-100 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300"
                   : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
@@ -1125,51 +1718,149 @@ function InvoiceRow({ invoice, onClick }: { invoice: InvoiceUI; onClick: () => v
             >
               {isB2B ? "B2B" : "B2C"}
             </span>
+            <span
+              className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[9px] font-semibold ${
+                isPaid
+                  ? "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                  : "bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
+              }`}
+            >
+              <span className={`w-1 h-1 rounded-full ${isPaid ? "bg-emerald-500" : "bg-amber-500"}`} />
+              {isPaid ? "Paid" : "Unpaid"}
+            </span>
             {invoice.raw?.warning && (
-              <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300">
+              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300">
                 Warning
               </span>
             )}
           </div>
 
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-            {invoice.date} • {invoice.raw?.buyer_gstin_info?.trade_name || invoice.raw?.buyer_gstin || "Direct Consumer"}
-          </p>
-
-          <div className="flex items-center gap-2 mt-2">
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate flex items-center gap-2 flex-wrap">
+            <span>{invoice.date}</span>
+            {invoice.raw?.buyer_gstin && (
+              <>
+                <span>•</span>
+                <span className="font-mono text-[10px] text-slate-400">GSTIN: {invoice.raw.buyer_gstin}</span>
+              </>
+            )}
+            <span>•</span>
             <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+              className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[9px] font-semibold ${
                 isConfirmed
                   ? "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
                   : "bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
               }`}
             >
-              <span className={`w-1.5 h-1.5 rounded-full ${isConfirmed ? "bg-emerald-500" : "bg-amber-500"}`} />
+              <span className={`w-1 h-1 rounded-full ${isConfirmed ? "bg-emerald-500" : "bg-amber-500"}`} />
               {isConfirmed ? "Confirmed" : "Draft"}
             </span>
-
             <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+              className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[9px] font-semibold ${
                 isSynced
                   ? "bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300"
                   : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
               }`}
             >
-              {isSynced ? <Cloud className="w-3 h-3" /> : <CloudOff className="w-3 h-3" />}
+              {isSynced ? <Cloud className="w-2.5 h-2.5" /> : <CloudOff className="w-2.5 h-2.5" />}
               {isSynced ? "Synced" : "Local"}
             </span>
           </div>
         </div>
       </div>
 
+      <div className="text-right flex items-center gap-2.5 shrink-0">
+        <div>
+          <p className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-50 tabular-nums font-mono">
+            {formatINR(invoice.amount)}
+          </p>
+          <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums font-mono flex items-center justify-end gap-1">
+            <span>Taxable: {formatINR(invoice.taxable || 0)}</span>
+            <span>•</span>
+            <span>Tax: {formatINR(invoice.gst)}</span>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-1 ml-1">
+          {onWhatsApp && !isPaid && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onWhatsApp();
+              }}
+              className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-600 dark:text-emerald-400 transition cursor-pointer"
+              title="Send WhatsApp payment reminder"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PurchaseRow({ purchase, onClick }: { purchase: PurchaseBill; onClick: () => void }) {
+  const isEligible = purchase.itcEligibility === "eligible" || purchase.itcEligibility === "capital_goods";
+  const taxCredit = (Number(purchase.cgst) || 0) + (Number(purchase.sgst) || 0) + (Number(purchase.igst) || 0) + (Number(purchase.cess) || 0);
+
+  return (
+    <button
+      onClick={onClick}
+      className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 active:bg-slate-100/60 dark:active:bg-slate-800 transition-all text-left flex items-center justify-between gap-3 group cursor-pointer"
+    >
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+          <ShoppingCart className="w-4 h-4" />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm truncate">
+              {purchase.invoiceNumber || "Purchase Bill"}
+            </p>
+            <span
+              className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                isEligible
+                  ? "bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+              }`}
+            >
+              {isEligible ? "ITC Eligible" : "ITC Blocked"}
+            </span>
+            <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+              {purchase.paymentStatus || "Unpaid"}
+            </span>
+          </div>
+
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate flex items-center gap-2 flex-wrap">
+            <span>{purchase.date || "-"}</span>
+            <span>•</span>
+            <span className="truncate">{purchase.supplierName || purchase.supplierGstin || "Vendor Bill"}</span>
+            <span>•</span>
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[9px] font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+              Tax Credit: {formatINR(taxCredit)}
+            </span>
+            {purchase.supplierGstin && (
+              <span className="text-[10px] text-slate-400 font-mono">
+                GSTIN: {purchase.supplierGstin}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="text-right flex-shrink-0">
-        <p className="text-base sm:text-lg font-black text-slate-900 dark:text-slate-50 tabular-nums font-mono">
-          {formatINR(invoice.amount)}
+        <p className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-50 tabular-nums font-mono">
+          {formatINR(purchase.total || 0)}
         </p>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums font-mono">
-          Tax {formatINR(invoice.gst)}
-        </p>
-        <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 ml-auto mt-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
+        <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums font-mono flex items-center justify-end gap-1">
+          <span>Taxable: {formatINR(purchase.taxableAmount || 0)}</span>
+          <span>•</span>
+          <span>ITC: {formatINR(taxCredit)}</span>
+        </div>
       </div>
     </button>
   );

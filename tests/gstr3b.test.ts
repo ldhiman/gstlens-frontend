@@ -183,3 +183,126 @@ test("checkDRC01BRisk detects high risk when GSTR-1 exceeds GSTR-3B by over 25,0
   assert.equal(risk.severity, "high");
   assert.ok(risk.message.includes("High DRC-01B Notice Risk"));
 });
+
+test("GSTR-3B accurately isolates RCM Inward ITC in Table 4(A)(3) without double-counting in Table 4(A)(5)", () => {
+  const userGSTIN = "07AAAAA0000A1Z5"; // Delhi
+  const fp = "102026";
+  const invoices = [
+    // Standard purchase (Non-RCM) -> Table 4(A)(5)
+    {
+      data: {
+        seller_gstin: "07SUPPLIER1111S",
+        buyer_gstin: userGSTIN,
+        taxable_value: 10000,
+        cgst: 900,
+        sgst: 900,
+        igst: 0,
+        is_inward: true,
+      },
+    },
+    // RCM purchase (Legal Services under Section 9(3)) -> Table 3.1(d) & Table 4(A)(3)
+    {
+      data: {
+        seller_gstin: "07ADVOCATE2222A",
+        buyer_gstin: userGSTIN,
+        taxable_value: 50000,
+        cgst: 4500,
+        sgst: 4500,
+        igst: 0,
+        is_inward: true,
+        reverse_charge: true,
+      },
+    },
+  ];
+
+  const comp = computeGSTR3B(userGSTIN, fp, invoices);
+
+  // Table 3.1(d) Inward supplies liable to reverse charge
+  const isupRev = comp.sup_details.isup_rev;
+  assert.equal(isupRev.txval, 50000);
+  assert.equal(isupRev.camt, 4500);
+  assert.equal(isupRev.samt, 4500);
+
+  // Table 4(A)(3) Inward supplies liable to reverse charge (ITC)
+  const itcIsrc = comp.itc_elg.itc_avl.ISRC;
+  assert.equal(itcIsrc.txval, 50000);
+  assert.equal(itcIsrc.camt, 4500);
+  assert.equal(itcIsrc.samt, 4500);
+
+  // Table 4(A)(5) All Other ITC (MUST EXCLUDE RCM to avoid double counting)
+  const itcOth = comp.itc_elg.itc_avl.OTH;
+  assert.equal(itcOth.txval, 10000); // Only non-RCM
+  assert.equal(itcOth.camt, 900);    // Only non-RCM
+  assert.equal(itcOth.samt, 900);    // Only non-RCM
+
+  // Table 4(C) Net ITC = OTH + ISRC = 900 + 4500 = 5400
+  const itcNet = comp.itc_elg.itc_net;
+  assert.equal(itcNet.camt, 5400);
+  assert.equal(itcNet.samt, 5400);
+
+  // RCM liability cannot be offset with ITC; net cash payable includes RCM liability
+  const cashPay = comp.tax_summary.net_cash_payable;
+  assert.equal(cashPay.camt, 4500); // 0 outward liability + 4500 RCM cash liability
+  assert.equal(cashPay.samt, 4500);
+});
+
+test("GSTR-3B populates Table 3.1(b) Zero-rated, 3.1(c) Nil/Exempt, and Table 5 Inward Exempt", () => {
+  const userGSTIN = "07AAAAA0000A1Z5";
+  const fp = "102026";
+  const invoices = [
+    // Zero-rated export (Table 3.1(b))
+    {
+      data: {
+        seller_gstin: userGSTIN,
+        invoice_type: "export",
+        taxable_value: 200000,
+        igst: 36000,
+      },
+    },
+    // Nil-rated outward supply (Table 3.1(c))
+    {
+      data: {
+        seller_gstin: userGSTIN,
+        is_nil_rated: true,
+        taxable_value: 25000,
+        cgst: 0,
+        sgst: 0,
+      },
+    },
+    // Inward exempt intra-state supply (Table 5 Intra)
+    {
+      data: {
+        seller_gstin: "07FARMER1234F1Z1",
+        buyer_gstin: userGSTIN,
+        is_inward: true,
+        is_exempt: true,
+        taxable_value: 15000,
+        pos: "07",
+      },
+    },
+    // Inward exempt inter-state supply (Table 5 Inter)
+    {
+      data: {
+        seller_gstin: "27GRAINS5678G1Z2",
+        buyer_gstin: userGSTIN,
+        is_inward: true,
+        is_exempt: true,
+        taxable_value: 30000,
+        pos: "27",
+      },
+    },
+  ];
+
+  const comp = computeGSTR3B(userGSTIN, fp, invoices);
+
+  // Table 3.1(b) Zero rated
+  assert.equal(comp.sup_details.osup_zero.txval, 200000);
+  assert.equal(comp.sup_details.osup_zero.iamt, 36000);
+
+  // Table 3.1(c) Nil rated
+  assert.equal(comp.sup_details.osup_nil_exmp.txval, 25000);
+
+  // Table 5 Inward supplies exempt, nil & non-GST
+  assert.equal(comp.inward_sup.isup_details.intra, 15000);
+  assert.equal(comp.inward_sup.isup_details.inter, 30000);
+});

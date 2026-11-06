@@ -9,6 +9,20 @@
  * - XML entity escaping and ledger debit/credit balance symmetry
  */
 
+export interface TallyLedgerConfig {
+  salesLedger?: string;
+  purchaseLedger?: string;
+  outputCgst?: string;
+  outputSgst?: string;
+  outputIgst?: string;
+  outputCess?: string;
+  inputCgst?: string;
+  inputSgst?: string;
+  inputIgst?: string;
+  inputCess?: string;
+  roundOff?: string;
+}
+
 export interface TallyInvoiceRecord {
   id?: string;
   data: {
@@ -29,6 +43,8 @@ export interface TallyInvoiceRecord {
     direction?: "outward" | "inward";
     is_inward?: boolean;
     is_rcm?: boolean;
+    document_type?: "invoice" | "credit_note" | "debit_note";
+    doc_type?: "invoice" | "credit_note" | "debit_note";
   };
 }
 
@@ -82,52 +98,53 @@ export function formatTallyDate(dateStr?: string): string {
   return `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
 }
 
+export const STATE_CODE_MAP: Record<string, string> = {
+  "01": "Jammu & Kashmir",
+  "02": "Himachal Pradesh",
+  "03": "Punjab",
+  "04": "Chandigarh",
+  "05": "Uttarakhand",
+  "06": "Haryana",
+  "07": "Delhi",
+  "08": "Rajasthan",
+  "09": "Uttar Pradesh",
+  "10": "Bihar",
+  "11": "Sikkim",
+  "12": "Arunachal Pradesh",
+  "13": "Nagaland",
+  "14": "Manipur",
+  "15": "Mizoram",
+  "16": "Tripura",
+  "17": "Meghalaya",
+  "18": "Assam",
+  "19": "West Bengal",
+  "20": "Jharkhand",
+  "21": "Odisha",
+  "22": "Chhattisgarh",
+  "23": "Madhya Pradesh",
+  "24": "Gujarat",
+  "26": "Dadra and Nagar Haveli and Daman and Diu",
+  "27": "Maharashtra",
+  "28": "Andhra Pradesh (Old)",
+  "29": "Karnataka",
+  "30": "Goa",
+  "31": "Lakshadweep",
+  "32": "Kerala",
+  "33": "Tamil Nadu",
+  "34": "Puducherry",
+  "35": "Andaman & Nicobar Islands",
+  "36": "Telangana",
+  "37": "Andhra Pradesh",
+  "38": "Ladakh",
+  "97": "Other Territory",
+};
+
 /**
  * Returns Indian State name for 2-digit GST state code.
  */
 export function getTallyStateName(posCode?: string): string {
-  const stateMap: Record<string, string> = {
-    "01": "Jammu & Kashmir",
-    "02": "Himachal Pradesh",
-    "03": "Punjab",
-    "04": "Chandigarh",
-    "05": "Uttarakhand",
-    "06": "Haryana",
-    "07": "Delhi",
-    "08": "Rajasthan",
-    "09": "Uttar Pradesh",
-    "10": "Bihar",
-    "11": "Sikkim",
-    "12": "Arunachal Pradesh",
-    "13": "Nagaland",
-    "14": "Manipur",
-    "15": "Mizoram",
-    "16": "Tripura",
-    "17": "Meghalaya",
-    "18": "Assam",
-    "19": "West Bengal",
-    "20": "Jharkhand",
-    "21": "Odisha",
-    "22": "Chhattisgarh",
-    "23": "Madhya Pradesh",
-    "24": "Gujarat",
-    "26": "Dadra and Nagar Haveli and Daman and Diu",
-    "27": "Maharashtra",
-    "28": "Andhra Pradesh (Old)",
-    "29": "Karnataka",
-    "30": "Goa",
-    "31": "Lakshadweep",
-    "32": "Kerala",
-    "33": "Tamil Nadu",
-    "34": "Puducherry",
-    "35": "Andaman & Nicobar Islands",
-    "36": "Telangana",
-    "37": "Andhra Pradesh",
-    "38": "Ladakh",
-    "97": "Other Territory",
-  };
   const code = (posCode || "").slice(0, 2);
-  return stateMap[code] || "Delhi";
+  return STATE_CODE_MAP[code] || "Delhi";
 }
 
 /**
@@ -144,13 +161,30 @@ export function getEffectiveGSTRate(txval: number, taxTotal: number): number {
 export function generateTallyXML(
   userGSTIN: string,
   invoices: TallyInvoiceRecord[],
-  companyName: string = "GSTLens Company"
+  companyName: string = "GSTLens Company",
+  ledgerConfig?: TallyLedgerConfig
 ): string {
   const normUserGSTIN = (userGSTIN || "").trim().toUpperCase();
   const vouchersXML: string[] = [];
 
+  const outCgstName = ledgerConfig?.outputCgst || "Output CGST";
+  const outSgstName = ledgerConfig?.outputSgst || "Output SGST";
+  const outIgstName = ledgerConfig?.outputIgst || "Output IGST";
+  const outCessName = ledgerConfig?.outputCess || "Output GST Cess";
+
+  const inCgstName = ledgerConfig?.inputCgst || "Input CGST";
+  const inSgstName = ledgerConfig?.inputSgst || "Input SGST";
+  const inIgstName = ledgerConfig?.inputIgst || "Input IGST";
+  const inCessName = ledgerConfig?.inputCess || "Input GST Cess";
+
+  const roundOffName = ledgerConfig?.roundOff || "Round Off";
+
   for (const inv of invoices) {
     const d = inv.data || {};
+    const docType = d.document_type || d.doc_type || "invoice";
+    const isCreditNote = docType === "credit_note";
+    const isDebitNote = docType === "debit_note";
+
     const seller = (d.seller_gstin || "").trim().toUpperCase();
     const buyer = (d.buyer_gstin || "").trim().toUpperCase();
 
@@ -158,7 +192,11 @@ export function generateTallyXML(
     // 1. Explicit voucher type / direction takes absolute priority
     // 2. Fallback to GSTIN matching (seller == user -> sales, buyer == user -> purchase)
     let isOutward = true;
-    if (d.direction === "inward" || d.is_inward === true) {
+    if (isDebitNote) {
+      isOutward = false;
+    } else if (isCreditNote) {
+      isOutward = true;
+    } else if (d.direction === "inward" || d.is_inward === true) {
       isOutward = false;
     } else if (d.direction === "outward" || d.is_inward === false) {
       isOutward = true;
@@ -179,20 +217,214 @@ export function generateTallyXML(
     const cess = Number((d.cess || 0).toFixed(2));
     const totalTax = cgst + sgst + igst + cess;
     const computedTotal = Number((txval + totalTax).toFixed(2));
-    const total = d.invoice_total !== undefined && d.invoice_total !== null
-      ? Number(Number(d.invoice_total).toFixed(2))
-      : computedTotal;
+    const total =
+      d.invoice_total !== undefined && d.invoice_total !== null
+        ? Number(Number(d.invoice_total).toFixed(2))
+        : computedTotal;
 
     // Section 170 Round-off calculation: diff between final total and line items
     const roundOff = Number((total - computedTotal).toFixed(2));
 
-    const pos = d.pos || (isOutward ? (buyer ? buyer.slice(0, 2) : normUserGSTIN.slice(0, 2)) : normUserGSTIN.slice(0, 2));
+    const pos =
+      d.pos ||
+      (isOutward
+        ? buyer
+          ? buyer.slice(0, 2)
+          : normUserGSTIN.slice(0, 2)
+        : normUserGSTIN.slice(0, 2));
     const stateName = getTallyStateName(pos);
     const gstRate = getEffectiveGSTRate(txval, totalTax);
 
-    if (isOutward) {
+    const salesLedgerName = ledgerConfig?.salesLedger
+      ? ledgerConfig.salesLedger.includes("{rate}")
+        ? ledgerConfig.salesLedger.replace("{rate}", String(gstRate))
+        : ledgerConfig.salesLedger
+      : `Sales Account${gstRate > 0 ? ` @ ${gstRate}%` : " Exempt"}`;
+
+    const purchaseLedgerName = ledgerConfig?.purchaseLedger
+      ? ledgerConfig.purchaseLedger.includes("{rate}")
+        ? ledgerConfig.purchaseLedger.replace("{rate}", String(gstRate))
+        : ledgerConfig.purchaseLedger
+      : `Purchase Account${gstRate > 0 ? ` @ ${gstRate}%` : " Exempt"}`;
+
+    if (isCreditNote) {
+      // ----------------- CREDIT NOTE VOUCHER -----------------
+      const partyName =
+        d.buyer_gstin_info?.trade_name ||
+        d.buyer_gstin_info?.legal_name ||
+        (buyer ? `Customer ${buyer}` : "Cash / Counter Customer");
+      const partyGSTIN = buyer || "";
+      const regType = partyGSTIN ? "Regular" : "Consumer";
+
+      const voucher = `
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <VOUCHER VCHTYPE="Credit Note" ACTION="Create" OBJVIEW="Invoice Voucher View">
+            <DATE>${dateFormatted}</DATE>
+            <REFERENCEDATE>${dateFormatted}</REFERENCEDATE>
+            <GSTREGISTRATIONTYPE>${regType}</GSTREGISTRATIONTYPE>
+            <STATENAME>${escapeXML(stateName)}</STATENAME>
+            <PLACEOFSUPPLY>${escapeXML(stateName)}</PLACEOFSUPPLY>
+            <VOUCHERTYPENAME>Credit Note</VOUCHERTYPENAME>
+            <VOUCHERNUMBER>${escapeXML(inum)}</VOUCHERNUMBER>
+            <REFERENCE>${escapeXML(inum)}</REFERENCE>
+            <PARTYLEDGERNAME>${escapeXML(partyName)}</PARTYLEDGERNAME>
+            <PARTYNAME>${escapeXML(partyName)}</PARTYNAME>
+            <PARTYGSTIN>${escapeXML(partyGSTIN)}</PARTYGSTIN>
+            <ISINVOICE>Yes</ISINVOICE>
+
+            <!-- 1. Party Account (Credit = Positive Amount in Tally for Credit Note) -->
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>${escapeXML(partyName)}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+              <ISPARTYLEDGER>Yes</ISPARTYLEDGER>
+              <AMOUNT>${total.toFixed(2)}</AMOUNT>
+              <BILLALLOCATIONS.LIST>
+                <NAME>${escapeXML(inum)}</NAME>
+                <BILLTYPE>Agst Ref</BILLTYPE>
+                <AMOUNT>${total.toFixed(2)}</AMOUNT>
+              </BILLALLOCATIONS.LIST>
+            </ALLLEDGERENTRIES.LIST>
+
+            <!-- 2. Sales Return / Sales Account (Debit = Negative Amount in Tally) -->
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>${escapeXML(salesLedgerName)}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+              <AMOUNT>-${txval.toFixed(2)}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>
+
+            ${cgst > 0 ? `
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>${escapeXML(outCgstName)}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+              <AMOUNT>-${cgst.toFixed(2)}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>` : ""}
+
+            ${sgst > 0 ? `
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>${escapeXML(outSgstName)}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+              <AMOUNT>-${sgst.toFixed(2)}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>` : ""}
+
+            ${igst > 0 ? `
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>${escapeXML(outIgstName)}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+              <AMOUNT>-${igst.toFixed(2)}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>` : ""}
+
+            ${cess > 0 ? `
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>${escapeXML(outCessName)}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+              <AMOUNT>-${cess.toFixed(2)}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>` : ""}
+
+            ${Math.abs(roundOff) > 0.001 ? `
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>${escapeXML(roundOffName)}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>${roundOff > 0 ? "Yes" : "No"}</ISDEEMEDPOSITIVE>
+              <AMOUNT>-${roundOff.toFixed(2)}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>` : ""}
+          </VOUCHER>
+        </TALLYMESSAGE>`;
+      vouchersXML.push(voucher.trim());
+    } else if (isDebitNote) {
+      // ----------------- DEBIT NOTE VOUCHER -----------------
+      let vendorName =
+        d.seller_gstin_info?.trade_name ||
+        d.seller_gstin_info?.legal_name ||
+        (seller ? `Vendor ${seller}` : "General Supplier");
+      let vendorGSTIN = seller || "";
+
+      if (normUserGSTIN && seller === normUserGSTIN && buyer && buyer !== normUserGSTIN) {
+        vendorName =
+          d.buyer_gstin_info?.trade_name ||
+          d.buyer_gstin_info?.legal_name ||
+          `Vendor ${buyer}`;
+        vendorGSTIN = buyer;
+      }
+
+      const vendorPos = vendorGSTIN ? vendorGSTIN.slice(0, 2) : pos;
+      const vendorStateName = getTallyStateName(vendorPos);
+
+      const voucher = `
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <VOUCHER VCHTYPE="Debit Note" ACTION="Create" OBJVIEW="Invoice Voucher View">
+            <DATE>${dateFormatted}</DATE>
+            <REFERENCEDATE>${dateFormatted}</REFERENCEDATE>
+            <GSTREGISTRATIONTYPE>Regular</GSTREGISTRATIONTYPE>
+            <STATENAME>${escapeXML(vendorStateName)}</STATENAME>
+            <PLACEOFSUPPLY>${escapeXML(stateName)}</PLACEOFSUPPLY>
+            <VOUCHERTYPENAME>Debit Note</VOUCHERTYPENAME>
+            <VOUCHERNUMBER>${escapeXML(inum)}</VOUCHERNUMBER>
+            <REFERENCE>${escapeXML(inum)}</REFERENCE>
+            <PARTYLEDGERNAME>${escapeXML(vendorName)}</PARTYLEDGERNAME>
+            <PARTYNAME>${escapeXML(vendorName)}</PARTYNAME>
+            <PARTYGSTIN>${escapeXML(vendorGSTIN)}</PARTYGSTIN>
+            <ISINVOICE>Yes</ISINVOICE>
+
+            <!-- 1. Vendor Account (Debit = Negative Amount in Tally for Debit Note) -->
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>${escapeXML(vendorName)}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+              <ISPARTYLEDGER>Yes</ISPARTYLEDGER>
+              <AMOUNT>-${total.toFixed(2)}</AMOUNT>
+              <BILLALLOCATIONS.LIST>
+                <NAME>${escapeXML(inum)}</NAME>
+                <BILLTYPE>Agst Ref</BILLTYPE>
+                <AMOUNT>-${total.toFixed(2)}</AMOUNT>
+              </BILLALLOCATIONS.LIST>
+            </ALLLEDGERENTRIES.LIST>
+
+            <!-- 2. Purchase Return / Purchase Account (Credit = Positive Amount) -->
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>${escapeXML(purchaseLedgerName)}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+              <AMOUNT>${txval.toFixed(2)}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>
+
+            ${cgst > 0 ? `
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>${escapeXML(inCgstName)}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+              <AMOUNT>${cgst.toFixed(2)}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>` : ""}
+
+            ${sgst > 0 ? `
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>${escapeXML(inSgstName)}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+              <AMOUNT>${sgst.toFixed(2)}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>` : ""}
+
+            ${igst > 0 ? `
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>${escapeXML(inIgstName)}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+              <AMOUNT>${igst.toFixed(2)}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>` : ""}
+
+            ${cess > 0 ? `
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>${escapeXML(inCessName)}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+              <AMOUNT>${cess.toFixed(2)}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>` : ""}
+
+            ${Math.abs(roundOff) > 0.001 ? `
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>${escapeXML(roundOffName)}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>${roundOff < 0 ? "Yes" : "No"}</ISDEEMEDPOSITIVE>
+              <AMOUNT>${roundOff.toFixed(2)}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>` : ""}
+          </VOUCHER>
+        </TALLYMESSAGE>`;
+      vouchersXML.push(voucher.trim());
+    } else if (isOutward) {
       // ----------------- SALES VOUCHER -----------------
-      const partyName = d.buyer_gstin_info?.trade_name ||
+      const partyName =
+        d.buyer_gstin_info?.trade_name ||
         d.buyer_gstin_info?.legal_name ||
         (buyer ? `Customer ${buyer}` : "Cash / Counter Customer");
       const partyGSTIN = buyer || "";
@@ -229,42 +461,42 @@ export function generateTallyXML(
 
             <!-- 2. Sales Account (Credit = Positive Amount in Tally) -->
             <ALLLEDGERENTRIES.LIST>
-              <LEDGERNAME>Sales Account${gstRate > 0 ? ` @ ${gstRate}%` : " Exempt"}</LEDGERNAME>
+              <LEDGERNAME>${escapeXML(salesLedgerName)}</LEDGERNAME>
               <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
               <AMOUNT>${txval.toFixed(2)}</AMOUNT>
             </ALLLEDGERENTRIES.LIST>
 
             ${cgst > 0 ? `
             <ALLLEDGERENTRIES.LIST>
-              <LEDGERNAME>Output CGST</LEDGERNAME>
+              <LEDGERNAME>${escapeXML(outCgstName)}</LEDGERNAME>
               <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
               <AMOUNT>${cgst.toFixed(2)}</AMOUNT>
             </ALLLEDGERENTRIES.LIST>` : ""}
 
             ${sgst > 0 ? `
             <ALLLEDGERENTRIES.LIST>
-              <LEDGERNAME>Output SGST</LEDGERNAME>
+              <LEDGERNAME>${escapeXML(outSgstName)}</LEDGERNAME>
               <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
               <AMOUNT>${sgst.toFixed(2)}</AMOUNT>
             </ALLLEDGERENTRIES.LIST>` : ""}
 
             ${igst > 0 ? `
             <ALLLEDGERENTRIES.LIST>
-              <LEDGERNAME>Output IGST</LEDGERNAME>
+              <LEDGERNAME>${escapeXML(outIgstName)}</LEDGERNAME>
               <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
               <AMOUNT>${igst.toFixed(2)}</AMOUNT>
             </ALLLEDGERENTRIES.LIST>` : ""}
 
             ${cess > 0 ? `
             <ALLLEDGERENTRIES.LIST>
-              <LEDGERNAME>Output GST Cess</LEDGERNAME>
+              <LEDGERNAME>${escapeXML(outCessName)}</LEDGERNAME>
               <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
               <AMOUNT>${cess.toFixed(2)}</AMOUNT>
             </ALLLEDGERENTRIES.LIST>` : ""}
 
             ${Math.abs(roundOff) > 0.001 ? `
             <ALLLEDGERENTRIES.LIST>
-              <LEDGERNAME>Round Off</LEDGERNAME>
+              <LEDGERNAME>${escapeXML(roundOffName)}</LEDGERNAME>
               <ISDEEMEDPOSITIVE>${roundOff < 0 ? "Yes" : "No"}</ISDEEMEDPOSITIVE>
               <AMOUNT>${roundOff.toFixed(2)}</AMOUNT>
             </ALLLEDGERENTRIES.LIST>` : ""}
@@ -273,7 +505,8 @@ export function generateTallyXML(
       vouchersXML.push(voucher.trim());
     } else {
       // ----------------- PURCHASE VOUCHER -----------------
-      let vendorName = d.seller_gstin_info?.trade_name ||
+      let vendorName =
+        d.seller_gstin_info?.trade_name ||
         d.seller_gstin_info?.legal_name ||
         (seller ? `Vendor ${seller}` : "General Supplier");
       let vendorGSTIN = seller || "";
@@ -281,7 +514,10 @@ export function generateTallyXML(
       // If user is listed as seller (e.g. sample invoice in workspace exported as Purchase voucher),
       // the counterparty vendor in the purchase entry should be the buyer!
       if (normUserGSTIN && seller === normUserGSTIN && buyer && buyer !== normUserGSTIN) {
-        vendorName = d.buyer_gstin_info?.trade_name || d.buyer_gstin_info?.legal_name || `Vendor ${buyer}`;
+        vendorName =
+          d.buyer_gstin_info?.trade_name ||
+          d.buyer_gstin_info?.legal_name ||
+          `Vendor ${buyer}`;
         vendorGSTIN = buyer;
       }
 
@@ -319,42 +555,42 @@ export function generateTallyXML(
 
             <!-- 2. Purchase Account (Debit = Negative Amount in Tally for Purchase) -->
             <ALLLEDGERENTRIES.LIST>
-              <LEDGERNAME>Purchase Account${gstRate > 0 ? ` @ ${gstRate}%` : " Exempt"}</LEDGERNAME>
+              <LEDGERNAME>${escapeXML(purchaseLedgerName)}</LEDGERNAME>
               <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
               <AMOUNT>-${txval.toFixed(2)}</AMOUNT>
             </ALLLEDGERENTRIES.LIST>
 
             ${cgst > 0 ? `
             <ALLLEDGERENTRIES.LIST>
-              <LEDGERNAME>Input CGST</LEDGERNAME>
+              <LEDGERNAME>${escapeXML(inCgstName)}</LEDGERNAME>
               <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
               <AMOUNT>-${cgst.toFixed(2)}</AMOUNT>
             </ALLLEDGERENTRIES.LIST>` : ""}
 
             ${sgst > 0 ? `
             <ALLLEDGERENTRIES.LIST>
-              <LEDGERNAME>Input SGST</LEDGERNAME>
+              <LEDGERNAME>${escapeXML(inSgstName)}</LEDGERNAME>
               <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
               <AMOUNT>-${sgst.toFixed(2)}</AMOUNT>
             </ALLLEDGERENTRIES.LIST>` : ""}
 
             ${igst > 0 ? `
             <ALLLEDGERENTRIES.LIST>
-              <LEDGERNAME>Input IGST</LEDGERNAME>
+              <LEDGERNAME>${escapeXML(inIgstName)}</LEDGERNAME>
               <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
               <AMOUNT>-${igst.toFixed(2)}</AMOUNT>
             </ALLLEDGERENTRIES.LIST>` : ""}
 
             ${cess > 0 ? `
             <ALLLEDGERENTRIES.LIST>
-              <LEDGERNAME>Input GST Cess</LEDGERNAME>
+              <LEDGERNAME>${escapeXML(inCessName)}</LEDGERNAME>
               <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
               <AMOUNT>-${cess.toFixed(2)}</AMOUNT>
             </ALLLEDGERENTRIES.LIST>` : ""}
 
             ${Math.abs(roundOff) > 0.001 ? `
             <ALLLEDGERENTRIES.LIST>
-              <LEDGERNAME>Round Off</LEDGERNAME>
+              <LEDGERNAME>${escapeXML(roundOffName)}</LEDGERNAME>
               <ISDEEMEDPOSITIVE>${roundOff > 0 ? "Yes" : "No"}</ISDEEMEDPOSITIVE>
               <AMOUNT>-${roundOff.toFixed(2)}</AMOUNT>
             </ALLLEDGERENTRIES.LIST>` : ""}

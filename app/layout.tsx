@@ -5,6 +5,7 @@ import { Toaster } from "react-hot-toast";
 
 import { AuthProvider } from "@/context/AuthContext";
 import InstallPwaPrompt from "@/components/InstallPwaPrompt";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 /* ---------------- Fonts ---------------- */
 
@@ -125,6 +126,7 @@ export default function RootLayout({
         <AuthProvider>
           {children}
           <InstallPwaPrompt />
+          <ServiceWorkerRegister />
         </AuthProvider>
         <Toaster position="bottom-center" />
       </body>

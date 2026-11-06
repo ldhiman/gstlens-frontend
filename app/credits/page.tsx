@@ -17,7 +17,6 @@ import {
   Loader2,
   RefreshCw,
   RotateCcw,
-  Sliders,
   Clock,
   Lock,
   FileText,
@@ -43,9 +42,6 @@ export default function CreditsPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
 
-  // Estimator State (Fintech ROI Calculator)
-  const [estimatedBills, setEstimatedBills] = useState<number>(150);
-
   // FAQ Accordion State
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
@@ -63,19 +59,44 @@ export default function CreditsPage() {
   }
 
   const credits = userProfile?.credits ?? 0;
-  const hasSubscription = userProfile?.subscription?.active ?? false;
-  const isCancelRequested = Boolean(
-    userProfile?.subscription?.cancel_requested ||
-    userProfile?.subscription?.cancel_at_period_end
+  const sub = userProfile?.subscription;
+  const upcomingSub = userProfile?.upcoming_subscription;
+  const hasSubscription = sub?.active ?? false;
+  const hasUpcoming = Boolean(upcomingSub?.active);
+  const isCustomPlan = Boolean(hasSubscription && sub?.is_custom);
+
+  // Resilient check for unlimited scans across root, active sub, and upcoming sub
+  const isUnlimited = Boolean(
+    userProfile?.unlimited_credits === true ||
+    userProfile?.unlimited_credits === "true" ||
+    sub?.unlimited_credits === true ||
+    sub?.unlimited_credits === "true" ||
+    upcomingSub?.unlimited_credits === true ||
+    upcomingSub?.unlimited_credits === "true" ||
+    sub?.plan?.toLowerCase().includes("unlimited") ||
+    upcomingSub?.plan?.toLowerCase().includes("unlimited")
   );
 
-  const renewalDate = userProfile?.subscription?.current_period_end
-    ? new Date(userProfile.subscription.current_period_end * 1000).toLocaleDateString("en-IN", {
+  const isCancelRequested = Boolean(
+    sub?.cancel_requested ||
+    sub?.cancel_at_period_end
+  );
+
+  const renewalDate = sub?.current_period_end
+    ? new Date(sub.current_period_end * 1000).toLocaleDateString("en-IN", {
         day: "numeric",
         month: "short",
         year: "numeric",
       })
     : null;
+
+  const upcomingStartDate = upcomingSub?.starts_at
+    ? new Date(upcomingSub.starts_at * 1000).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : renewalDate;
 
   // Credit Packs Matrix
   const creditPacks = [
@@ -287,22 +308,6 @@ export default function CreditsPage() {
     }
   };
 
-  // Estimator Calculations
-  const hoursSaved = Math.round((estimatedBills * 3) / 60);
-  const manualEntryCost = estimatedBills * 15; // standard Indian B2B data-entry cost ~₹15/bill
-  const bestOption =
-    estimatedBills >= 100
-      ? {
-          name: "Pro Monthly Subscription",
-          cost: 499,
-          reason: "Includes 100 credits/mo + Continuous multi-device Cloud Backup",
-        }
-      : {
-          name: "50 or 150 Credits Pack",
-          cost: estimatedBills <= 50 ? 100 : 250,
-          reason: "Pay-as-you-go with zero expiration",
-        };
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors pb-24 md:pb-16">
       {/* Sticky Top Header */}
@@ -319,13 +324,13 @@ export default function CreditsPage() {
             </button>
             <div className="w-px h-5 bg-slate-200 dark:bg-slate-800" />
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+              <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-900 dark:text-white">
                 <Coins className="w-4 h-4" />
               </div>
               <div>
                 <h1 className="text-sm sm:text-base font-bold tracking-tight">Credits & Billing</h1>
                 <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                  Manage invoice extraction fuel & subscription
+                  Manage credits and subscription
                 </p>
               </div>
             </div>
@@ -341,353 +346,373 @@ export default function CreditsPage() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8">
-        {/* 1. Dynamic Balance & Health Hero */}
-        <div
-          className={`relative overflow-hidden rounded-3xl p-6 sm:p-8 text-white shadow-xl transition-all ${
-            credits === 0
-              ? "bg-gradient-to-br from-rose-700 via-rose-800 to-slate-950 border border-rose-500/30 shadow-rose-900/20"
-              : credits < 15
-              ? "bg-gradient-to-br from-amber-600 via-amber-700 to-slate-950 border border-amber-500/30 shadow-amber-900/20"
-              : "bg-gradient-to-br from-indigo-600 via-indigo-700 to-slate-950 border border-indigo-500/30 shadow-indigo-900/20"
-          }`}
-        >
-          {/* Subtle geometric background glow */}
-          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="text-white/80 text-xs uppercase tracking-wider font-bold">
-                  Available Fuel Balance
+        {/* 1. Account Balance Card */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Account Balance
                 </span>
-                <span
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                    credits === 0
-                      ? "bg-rose-950/80 text-rose-200 border border-rose-500/50"
-                      : credits < 15
-                      ? "bg-amber-950/80 text-amber-200 border border-amber-500/50"
-                      : "bg-emerald-950/80 text-emerald-200 border border-emerald-500/50"
-                  }`}
-                >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      credits === 0
-                        ? "bg-rose-400 animate-pulse"
-                        : credits < 15
-                        ? "bg-amber-400 animate-pulse"
-                        : "bg-emerald-400"
-                    }`}
-                  />
-                  {credits === 0
-                    ? "Action Required • Depleted"
-                    : credits < 15
-                    ? "Low Fuel • Top-up Advised"
-                    : "Optimal Health"}
+                <span className="px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                  {isUnlimited
+                    ? "Enterprise Unlimited"
+                    : hasSubscription
+                    ? "Pro Active"
+                    : "Free Tier"}
                 </span>
               </div>
 
               <div className="flex items-baseline gap-3">
-                <span className="text-5xl sm:text-6xl font-black font-mono tabular-nums tracking-tight">
-                  {credits}
+                <span className="text-4xl font-extrabold text-slate-900 dark:text-white font-mono tabular-nums">
+                  {isUnlimited ? "∞" : credits}
                 </span>
-                <span className="text-base sm:text-lg font-medium text-white/80">
-                  credits remaining
+                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                  {isUnlimited ? "unlimited scans unlocked" : credits === 1 ? "credit remaining" : "credits remaining"}
                 </span>
               </div>
 
-              <p className="text-xs sm:text-sm text-white/90 flex items-center gap-2">
-                <Zap className="w-4 h-4 text-amber-300 flex-shrink-0" />
-                <span>
-                  <strong>1 credit = 1 invoice extracted</strong> • Previews, edits, GSTR-1, GSTR-3B & Tally XML exports are <strong>100% free</strong>
-                </span>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                1 credit = 1 invoice scanned. Data export, reports, and edits are always free.
               </p>
             </div>
 
-            {/* Quick Action Top-up Anchor */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              <a
-                href="#packs"
-                className="py-3 px-5 rounded-2xl bg-white text-slate-900 hover:bg-slate-100 font-bold text-xs sm:text-sm shadow-md transition text-center flex items-center justify-center gap-2 active:scale-98"
-              >
-                <Sparkles className="w-4 h-4 text-indigo-600" />
-                Refill Credits Now
-              </a>
-            </div>
+            {!isUnlimited && (
+              <div className="flex items-center">
+                <a
+                  href="#packs"
+                  className="py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-xs transition inline-flex items-center gap-1.5"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Recharge Credits</span>
+                </a>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* 2. Pro Monthly Subscription Section (3 Lifecycle States) */}
+        {/* 2. Pro Monthly Subscription or Custom Partner Section */}
         <section className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <Cloud className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                Pro Monthly Subscription
+                {isCustomPlan ? (
+                  <>
+                    <Sparkles className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                    Custom Partner Tier
+                  </>
+                ) : (
+                  <>
+                    <Cloud className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                    Pro Monthly Subscription
+                  </>
+                )}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Automated monthly refill with multi-device cloud backup & continuous synchronization
+                {isCustomPlan
+                  ? "Exclusive negotiated plan with customized quota, cloud sync, and priority compliance."
+                  : "Automated monthly refill with multi-device cloud backup & continuous synchronization"}
               </p>
             </div>
             {hasSubscription && (
               <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
-                {renewalDate ? `Renews on: ${renewalDate}` : "Active Auto-Refill"}
+                {renewalDate ? `Valid until: ${renewalDate}` : "Active Auto-Refill"}
               </span>
             )}
           </div>
 
-          <div
-            className={`relative rounded-3xl p-6 sm:p-8 shadow-sm border transition-all ${
-              hasSubscription
-                ? isCancelRequested
-                  ? "border-amber-400/80 bg-amber-50/30 dark:bg-amber-950/20"
-                  : "border-emerald-500/80 bg-emerald-50/40 dark:bg-emerald-950/20 ring-1 ring-emerald-500/20"
-                : "border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700"
-            }`}
-          >
-            {/* Status Floating Pill */}
-            {hasSubscription && (
-              <div
-                className={`absolute -top-3.5 left-6 px-3.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm text-white ${
-                  isCancelRequested ? "bg-amber-500" : "bg-emerald-600"
-                }`}
-              >
-                {isCancelRequested ? (
-                  <>
-                    <AlertCircle className="w-3.5 h-3.5" /> CANCELLATION PENDING
-                  </>
-                ) : (
-                  <>
-                    <BadgeCheck className="w-3.5 h-3.5" /> ACTIVE PRO SUBSCRIBER
-                  </>
-                )}
-              </div>
-            )}
-
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="space-y-4 max-w-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400 flex-shrink-0">
-                    <Cloud className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                      Pro Monthly Plan
-                    </h3>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-black text-slate-900 dark:text-slate-100 font-mono tabular-nums">
-                        ₹499
-                      </span>
-                      <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                        / month (₹4.99 per invoice + Cloud Storage)
-                      </span>
+          {isCustomPlan ? (
+            /* Custom Plan Display */
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs relative">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="space-y-4 max-w-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400 flex-shrink-0">
+                      <Sparkles className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                          {sub?.plan || "Custom Partner Suite"}
+                        </h3>
+                        <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-semibold px-2 py-0.5 rounded">
+                          Custom Deal
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2 mt-0.5">
+                        {sub?.deal_amount ? (
+                          <span className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 font-mono tabular-nums">
+                            ₹{sub.deal_amount}
+                          </span>
+                        ) : null}
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                          ({sub?.billing_cycle || "Custom Agreement"})
+                        </span>
+                      </div>
                     </div>
                   </div>
+
+                  <ul className="space-y-2 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                      <span>
+                        {isUnlimited ? (
+                          <strong>Unlimited AI OCR Invoices (Zero per-scan deductions)</strong>
+                        ) : (
+                          <>Custom quota allocated: <strong>{credits} credits remaining</strong></>
+                        )}
+                      </span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                      <span>Full multi-device cloud synchronization &amp; Firestore backup active</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                      <span>Dedicated direct compliance support from GSTLens team</span>
+                    </li>
+                    {sub?.notes && (
+                      <li className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 italic">
+                        &quot;{sub.notes}&quot;
+                      </li>
+                    )}
+                  </ul>
                 </div>
 
-                {/* Cancellation Pending Notification */}
-                {isCancelRequested && (
-                  <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
-                    <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                <div className="flex flex-col justify-center sm:min-w-[200px] gap-2.5">
+                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 text-center space-y-0.5">
+                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      Status: Active Deal
+                    </p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      {renewalDate ? `Valid until: ${renewalDate}` : "Active Partnership"}
+                    </p>
+                  </div>
+
+                  <a
+                    href="https://wa.me/919999999999?text=Hi%20GSTLens%2C%20I%20would%20like%20to%20discuss%20my%20Custom%20Plan"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-2.5 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition flex items-center justify-center gap-1.5"
+                  >
+                    Contact Account Executive
+                  </a>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Standard Razorpay Card */
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs relative">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="space-y-4 max-w-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400 flex-shrink-0">
+                      <Cloud className="w-5 h-5" />
+                    </div>
                     <div>
-                      <p className="font-bold">Cancellation in progress</p>
-                      <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5 leading-relaxed">
-                        Your cancellation request has been registered with Razorpay. Full Pro features remain active until{" "}
-                        <strong>{renewalDate || "the end of your current cycle"}</strong>. No further bank auto-debits will occur. Click <strong>Restart Subscription</strong> anytime to resume uninterrupted monthly credits.
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                          Pro Monthly Plan
+                        </h3>
+                        {hasSubscription && (
+                          <span
+                            className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
+                              isCancelRequested
+                                ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300"
+                                : "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300"
+                            }`}
+                          >
+                            {isCancelRequested ? "Cancellation Pending" : "Active"}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-baseline gap-2 mt-0.5">
+                        <span className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 font-mono tabular-nums">
+                          ₹499
+                        </span>
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                          / month (Includes 100 credits + Cloud Sync)
+                        </span>
+                      </div>
                     </div>
                   </div>
-                )}
 
-                <ul className="space-y-2 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-                    <span><strong>100 fresh credits</strong> auto-refilled every 30 days</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-                    <span>Continuous cloud backup & seamless synchronization across PC & mobile</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-                    <span>Priority WhatsApp compliance & prompt technical assistance</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Infinity className="w-4 h-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
-                    <span>Zero lock-in: Cancel mandate directly from app or UPI anytime</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Action Buttons Column */}
-              <div className="flex flex-col justify-center sm:min-w-[220px] gap-2.5">
-                {hasSubscription ? (
-                  isCancelRequested ? (
-                    <>
-                      <button
-                        onClick={restartSubscription}
-                        disabled={isProcessing}
-                        className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-700 hover:to-indigo-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-emerald-500/20 active:scale-98 transition min-h-[44px] disabled:opacity-50"
-                      >
-                        <RotateCcw className="w-4 h-4" />
-                        {isProcessing ? "Connecting to Razorpay..." : "Restart Subscription"}
-                      </button>
-                      <button
-                        onClick={syncSubscription}
-                        disabled={isProcessing}
-                        className="w-full py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition flex items-center justify-center gap-1.5 min-h-[36px] disabled:opacity-50"
-                        title="Fetch live subscription status directly from Razorpay"
-                      >
-                        <RefreshCw className={`w-3.5 h-3.5 ${isProcessing ? "animate-spin" : ""}`} />
-                        Sync Status with Razorpay
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <div className="p-3 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/80 text-center">
-                        <p className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300">
-                          Status: Active Plan
-                        </p>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                          {renewalDate ? `Next cycle: ${renewalDate}` : "Auto-renews monthly"}
+                  {/* Cancellation Pending Notification */}
+                  {isCancelRequested && (
+                    <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
+                      <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold">Cancellation in progress</p>
+                        <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5 leading-relaxed">
+                          Your cancellation request has been registered with Razorpay. Full Pro features remain active until{" "}
+                          <strong>{renewalDate || "the end of your current cycle"}</strong>. No further auto-debits will occur. Click <strong>Restart Subscription</strong> anytime to resume.
                         </p>
                       </div>
+                    </div>
+                  )}
 
-                      <button
-                        onClick={syncSubscription}
-                        disabled={isProcessing}
-                        className="w-full py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition flex items-center justify-center gap-1.5 min-h-[38px] disabled:opacity-50"
-                        title="Fetch live subscription status directly from Razorpay"
-                      >
-                        <RefreshCw className={`w-3.5 h-3.5 ${isProcessing ? "animate-spin" : ""}`} />
-                        Sync Status with Razorpay
-                      </button>
+                  <ul className="space-y-2 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                      <span><strong>100 fresh credits</strong> auto-refilled every 30 days</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                      <span>Continuous cloud backup &amp; seamless synchronization across PC &amp; mobile</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                      <span>Priority compliance &amp; prompt technical assistance</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Infinity className="w-4 h-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />
+                      <span>Zero lock-in: Cancel mandate directly from app or UPI anytime</span>
+                    </li>
+                  </ul>
+                </div>
 
-                      <button
-                        onClick={() => setShowCancelModal(true)}
-                        className="w-full py-2 text-rose-600 dark:text-rose-400 font-semibold text-xs hover:underline transition text-center"
-                      >
-                        Cancel Auto-Renew
-                      </button>
-                    </>
-                  )
-                ) : (
-                  <button
-                    onClick={subscribeToPlan}
-                    disabled={isProcessing}
-                    className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-indigo-500/20 active:scale-98 transition min-h-[44px] disabled:opacity-50"
-                  >
-                    <CreditCard className="w-4 h-4" />
-                    {isProcessing ? "Connecting..." : "Subscribe to Pro (₹499/mo)"}
-                  </button>
-                )}
+                {/* Action Buttons Column */}
+                <div className="flex flex-col justify-center sm:min-w-[200px] gap-2">
+                  {hasSubscription ? (
+                    isCancelRequested ? (
+                      <>
+                        <button
+                          onClick={restartSubscription}
+                          disabled={isProcessing}
+                          className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-xs transition flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          {isProcessing ? "Connecting..." : "Restart Subscription"}
+                        </button>
+                        <button
+                          onClick={syncSubscription}
+                          disabled={isProcessing}
+                          className="w-full py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+                          title="Fetch live subscription status directly from Razorpay"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 ${isProcessing ? "animate-spin" : ""}`} />
+                          Sync Status
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 text-center">
+                          <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                            Status: Active Plan
+                          </p>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            {renewalDate ? `Next cycle: ${renewalDate}` : "Auto-renews monthly"}
+                          </p>
+                        </div>
+
+                        <button
+                          onClick={syncSubscription}
+                          disabled={isProcessing}
+                          className="w-full py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+                          title="Fetch live subscription status directly from Razorpay"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 ${isProcessing ? "animate-spin" : ""}`} />
+                          Sync Status
+                        </button>
+
+                        <button
+                          onClick={() => setShowCancelModal(true)}
+                          className="w-full py-1.5 text-rose-600 dark:text-rose-400 font-medium text-xs hover:underline transition text-center"
+                        >
+                          Cancel Auto-Renew
+                        </button>
+                      </>
+                    )
+                  ) : (
+                    <button
+                      onClick={subscribeToPlan}
+                      disabled={isProcessing}
+                      className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-xs transition flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      {isProcessing ? "Connecting..." : "Subscribe to Pro (₹499/mo)"}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          )}
 
-        {/* 3. Interactive Volume & ROI Estimator (Fintech UX Feature) */}
-        <section className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                Monthly Volume & ROI Estimator
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Calculate your monthly invoice requirement and estimated time saved
-              </p>
-            </div>
+          {/* Upcoming / Queued Subscription Card */}
+          {hasUpcoming && upcomingSub && (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs mt-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="space-y-3 max-w-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400 flex-shrink-0">
+                      <Clock className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                          {upcomingSub.plan || "Custom Upcoming Plan"}
+                        </h3>
+                        <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-semibold px-2 py-0.5 rounded">
+                          Upcoming
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2 mt-0.5">
+                        {upcomingSub.deal_amount ? (
+                          <span className="text-xl font-bold text-slate-900 dark:text-slate-100 font-mono">
+                            ₹{upcomingSub.deal_amount}
+                          </span>
+                        ) : null}
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                          ({upcomingSub.billing_cycle || "Custom"}) • {upcomingSub.duration_days} days
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
-            {/* Quick preset chips */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {[50, 100, 150, 350, 500].map((val) => (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => setEstimatedBills(val)}
-                  className={`px-2.5 py-1 rounded-xl text-xs font-semibold transition ${
-                    estimatedBills === val
-                      ? "bg-indigo-600 text-white shadow-xs"
-                      : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
-                  }`}
-                >
-                  {val} bills
-                </button>
-              ))}
-            </div>
-          </div>
+                  <ul className="space-y-2 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                      <span>
+                        Scheduled to seamlessly activate on <strong>{upcomingStartDate || "end of current cycle"}</strong>
+                      </span>
+                    </li>
+                    {upcomingSub.unlimited_credits && (
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+                        <span>
+                          <strong>VIP Access:</strong> Unlimited AI scans active now
+                        </span>
+                      </li>
+                    )}
+                    {upcomingSub.notes && (
+                      <li className="text-[11px] text-slate-500 dark:text-slate-400 italic">
+                        &quot;{upcomingSub.notes}&quot;
+                      </li>
+                    )}
+                  </ul>
+                </div>
 
-          {/* Slider */}
-          <div className="space-y-2">
-            <input
-              type="range"
-              min={25}
-              max={500}
-              step={25}
-              value={estimatedBills}
-              onChange={(e) => setEstimatedBills(Number(e.target.value))}
-              className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-            />
-            <div className="flex justify-between text-[11px] font-mono text-slate-400">
-              <span>25 invoices / mo</span>
-              <span>250 invoices</span>
-              <span>500+ invoices / mo</span>
-            </div>
-          </div>
-
-          {/* ROI Metric Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-2">
-            <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50">
-              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                Manual Hours Saved
-              </span>
-              <p className="text-2xl font-black text-indigo-950 dark:text-indigo-200 font-mono mt-1">
-                ~{hoursSaved} Hours / mo
-              </p>
-              <p className="text-[10px] text-slate-400 mt-0.5">
-                Based on 3 mins / manual entry
-              </p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/50">
-              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                <TrendingUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                Data Entry Cost Saved
-              </span>
-              <p className="text-2xl font-black text-emerald-950 dark:text-emerald-200 font-mono mt-1">
-                {formatINR(manualEntryCost)}
-              </p>
-              <p className="text-[10px] text-slate-400 mt-0.5">
-                Vs traditional ₹15 / entry cost
-              </p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between">
-              <div>
-                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                  Recommended Choice
-                </span>
-                <p className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-1 truncate">
-                  {bestOption.name}
-                </p>
-                <p className="text-[10px] text-slate-400 mt-0.5">
-                  {bestOption.reason}
-                </p>
+                <div className="flex flex-col justify-center sm:min-w-[180px] text-center p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-0.5">
+                  <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                    Queued
+                  </span>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Activates {upcomingStartDate}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </section>
 
-        {/* 4. One-Time Credit Packs (Bento Grid) */}
+        {/* 3. One-Time Credit Packs */}
         <section id="packs" className="space-y-4 scroll-mt-24">
-          <div className="text-center sm:text-left">
-            <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <div>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100">
               Pay-As-You-Go Credit Packs
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              One-time purchase • Zero recurring commitments • Credits never expire
+              One-time purchase • No recurring charges • Credits never expire
             </p>
           </div>
 
@@ -698,43 +723,43 @@ export default function CreditsPage() {
                 <div
                   key={pack.credits}
                   onClick={() => setSelectedPackIndex(idx)}
-                  className={`relative rounded-3xl p-6 sm:p-7 border cursor-pointer transition-all ${
+                  className={`bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-xs relative cursor-pointer transition-all ${
                     pack.popular
-                      ? "border-indigo-600 dark:border-indigo-500 bg-gradient-to-b from-indigo-50/40 to-white dark:from-indigo-950/30 dark:to-slate-900 shadow-md ring-2 ring-indigo-500/20"
+                      ? "border-2 border-indigo-600"
                       : isSelected
-                      ? "border-indigo-500 dark:border-indigo-400 bg-white dark:bg-slate-900 shadow-sm ring-1 ring-indigo-500/20"
-                      : "border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700"
+                      ? "border border-indigo-500"
+                      : "border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
                   }`}
                 >
                   {/* Floating Badges */}
                   {pack.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-3 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase shadow-xs">
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-3 py-0.5 rounded-full text-[10px] font-semibold tracking-wide uppercase">
                       Most Popular
                     </div>
                   )}
                   {pack.save && !pack.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-3 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase shadow-xs">
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 px-3 py-0.5 rounded-full text-[10px] font-medium tracking-wide uppercase">
                       {pack.save}
                     </div>
                   )}
 
                   <div className="text-center">
-                    <span className="text-[10px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                    <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                       {pack.tier}
                     </span>
 
-                    <h4 className="text-3xl sm:text-4xl font-black font-mono tabular-nums text-slate-900 dark:text-slate-100 mt-2">
+                    <h4 className="text-3xl font-extrabold font-mono tabular-nums text-slate-900 dark:text-slate-100 mt-2">
                       {pack.credits}
                     </h4>
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-0.5">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                       Credits
                     </p>
 
                     <div className="mt-4 pb-4 border-b border-slate-100 dark:border-slate-800">
-                      <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 font-mono tabular-nums">
+                      <p className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 font-mono tabular-nums">
                         ₹{pack.priceRupees}
                       </p>
-                      <p className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-bold mt-0.5 tabular-nums">
+                      <p className="text-xs font-mono text-slate-500 dark:text-slate-400 font-medium mt-0.5 tabular-nums">
                         {pack.perInvoice}
                       </p>
                       <p className="text-[10px] text-slate-400 mt-0.5">
@@ -748,15 +773,13 @@ export default function CreditsPage() {
                         buyCredits(pack.credits);
                       }}
                       disabled={isProcessing}
-                      className={`mt-4 w-full py-3 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all min-h-[44px] active:scale-98 ${
-                        isProcessing
-                          ? "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
-                          : pack.popular
-                          ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/20"
+                      className={`mt-4 w-full py-2.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50 ${
+                        pack.popular
+                          ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
                           : "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white"
                       }`}
                     >
-                      <CreditCard className="w-4 h-4" />
+                      <CreditCard className="w-3.5 h-3.5" />
                       {isProcessing ? "Processing..." : `Buy ${pack.credits} Credits`}
                     </button>
                   </div>
@@ -766,15 +789,15 @@ export default function CreditsPage() {
           </div>
         </section>
 
-        {/* 5. B2B Trust, Security & Regulatory Matrix */}
-        <section className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+        {/* 4. B2B Trust, Security & Regulatory Matrix */}
+        <section className="bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
           <div className="flex items-center gap-2 text-slate-900 dark:text-slate-100 font-bold text-sm sm:text-base">
             <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             Fintech Security & Statutory Assurance
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-1">
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-1">
               <span className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                 RBI e-Mandate Compliant
@@ -784,7 +807,7 @@ export default function CreditsPage() {
               </p>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-1">
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-1">
               <span className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                 <Lock className="w-3.5 h-3.5 text-indigo-600" />
                 256-Bit TLS Encryption
@@ -794,9 +817,9 @@ export default function CreditsPage() {
               </p>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-1">
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-1">
               <span className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-teal-600" />
+                <FileText className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
                 18% GST Input Credit
               </span>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
@@ -804,9 +827,9 @@ export default function CreditsPage() {
               </p>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-1">
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-1">
               <span className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                <RotateCcw className="w-3.5 h-3.5 text-amber-600" />
+                <RotateCcw className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
                 Zero Lock-In Freedom
               </span>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
@@ -816,8 +839,8 @@ export default function CreditsPage() {
           </div>
         </section>
 
-        {/* 6. Interactive FAQ Accordion */}
-        <section className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+        {/* 5. Interactive FAQ Accordion */}
+        <section className="bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
           <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <HelpCircle className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             Frequently Asked Questions
@@ -870,7 +893,7 @@ export default function CreditsPage() {
       {/* Cancel Confirmation Modal */}
       {showCancelModal && (
         <div className="fixed inset-0 bg-black/60 dark:bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 border border-slate-200 dark:border-slate-800 animate-scale-in">
+          <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-2xl shadow-xl max-w-md w-full p-6 sm:p-8 border border-slate-200 dark:border-slate-800 animate-scale-in">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-rose-50 dark:bg-rose-950/60 rounded-xl flex items-center justify-center text-rose-600 dark:text-rose-400 flex-shrink-0">
                 <AlertCircle className="w-5 h-5" />

@@ -117,6 +117,9 @@ export function computeGSTR3B(
 
   // Table 3.1 accumulators
   let osup_txval = 0, osup_iamt = 0, osup_camt = 0, osup_samt = 0, osup_csamt = 0;
+  let osup_zero_txval = 0, osup_zero_iamt = 0, osup_zero_csamt = 0;
+  let osup_nil_txval = 0;
+  let osup_nongst_txval = 0;
   let rcm_txval = 0, rcm_iamt = 0, rcm_camt = 0, rcm_samt = 0, rcm_csamt = 0;
 
   // Table 3.2 map (pos -> { txval, iamt })
@@ -125,6 +128,9 @@ export function computeGSTR3B(
   // Table 4 ITC accumulators
   let itc_oth_txval = 0, itc_oth_iamt = 0, itc_oth_camt = 0, itc_oth_samt = 0, itc_oth_csamt = 0;
   let itc_rev_txval = 0, itc_rev_iamt = 0, itc_rev_camt = 0, itc_rev_samt = 0, itc_rev_csamt = 0;
+
+  // Table 5 Inward supplies exempt, nil and non-GST
+  let inward_inter = 0, inward_intra = 0;
 
   for (const item of invoices) {
     const inv = item.data || item;
@@ -145,6 +151,8 @@ export function computeGSTR3B(
       pos = buyerGST.length >= 2 ? buyerGST.slice(0, 2) : sellerGST.slice(0, 2) || userState || "99";
     }
 
+    const isInterState = igst > 0 || (pos && userState && pos !== userState);
+
     // Classification: Is this an Inward (Purchase) or Outward (Sale) supply?
     const isInward =
       inv.is_inward === true ||
@@ -158,14 +166,24 @@ export function computeGSTR3B(
         rcm_camt += cgst;
         rcm_samt += sgst;
         rcm_csamt += cess;
+      } else {
+        // Gross ITC under Table 4(A)(5) "All other ITC" (excludes RCM which is in Table 4(A)(3))
+        itc_oth_txval += txval;
+        itc_oth_iamt += igst;
+        itc_oth_camt += cgst;
+        itc_oth_samt += sgst;
+        itc_oth_csamt += cess;
       }
 
-      // Gross ITC under Table 4(A)(5)
-      itc_oth_txval += txval;
-      itc_oth_iamt += igst;
-      itc_oth_camt += cgst;
-      itc_oth_samt += sgst;
-      itc_oth_csamt += cess;
+      // Inward supplies exempt, nil, or non-GST -> Table 5
+      const totalTax = cgst + sgst + igst + cess;
+      if (totalTax === 0 || inv.is_exempt || inv.is_nil_rated || inv.is_non_gst) {
+        if (isInterState) {
+          inward_inter += txval;
+        } else {
+          inward_intra += txval;
+        }
+      }
 
       // Ineligible / Blocked ITC under Section 17(5) -> Reversal under Table 4(B)(1)
       if (isBlocked) {
@@ -176,16 +194,25 @@ export function computeGSTR3B(
         itc_rev_csamt += cess;
       }
     } else {
-      // OUTWARD SUPPLY -> Feeds Table 3.1(a) and Table 3.2
-      osup_txval += txval;
-      osup_iamt += igst;
-      osup_camt += cgst;
-      osup_samt += sgst;
-      osup_csamt += cess;
+      // OUTWARD SUPPLY -> Feeds Table 3.1 and Table 3.2
+      if (inv.is_zero_rated || inv.invoice_type === "export" || inv.invoice_type === "sez") {
+        osup_zero_txval += txval;
+        osup_zero_iamt += igst;
+        osup_zero_csamt += cess;
+      } else if (inv.is_exempt || inv.is_nil_rated) {
+        osup_nil_txval += txval;
+      } else if (inv.is_non_gst) {
+        osup_nongst_txval += txval;
+      } else {
+        osup_txval += txval;
+        osup_iamt += igst;
+        osup_camt += cgst;
+        osup_samt += sgst;
+        osup_csamt += cess;
+      }
 
       // Table 3.2: Inter-State supplies to unregistered persons (B2C where POS != Supplier State)
       const isB2C = inv.invoice_type === "B2C" || !buyerGST;
-      const isInterState = igst > 0 || (pos && userState && pos !== userState);
 
       if (isB2C && isInterState && pos) {
         const curr = unregMap.get(pos) || { txval: 0, iamt: 0 };
@@ -272,10 +299,14 @@ export function computeGSTR3B(
 
     sup_details: {
       osup_det,
-      osup_zero: { txval: 0, iamt: 0, csamt: 0 },
-      osup_nil_exmp: { txval: 0 },
+      osup_zero: {
+        txval: roundNearest(osup_zero_txval),
+        iamt: roundNearest(osup_zero_iamt),
+        csamt: roundNearest(osup_zero_csamt),
+      },
+      osup_nil_exmp: { txval: roundNearest(osup_nil_txval) },
       isup_rev,
-      osup_nongst: { txval: 0 },
+      osup_nongst: { txval: roundNearest(osup_nongst_txval) },
     },
 
     inter_sup: {
@@ -305,8 +336,8 @@ export function computeGSTR3B(
 
     inward_sup: {
       isup_details: {
-        inter: 0,
-        intra: 0,
+        inter: roundNearest(inward_inter),
+        intra: roundNearest(inward_intra),
       },
     },
 
