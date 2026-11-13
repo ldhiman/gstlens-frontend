@@ -126,3 +126,51 @@ test("runGstr2bReconciliation detects Rule 88C DRC-01B High Risk when Book ITC v
   // Variance is ₹36,000 (> ₹25,000 limit) -> Triggers High Risk
   assert.equal(summary.isDrc01bHighRisk, true);
 });
+
+test("runGstr2bReconciliation flags AMOUNT_MISMATCH when fuzzy invoice has value discrepancy", () => {
+  const portalSuppliers: Gstr2bSupplier[] = [
+    {
+      ctin: "27AABCU9603R1ZN",
+      trdnm: "Apex Corp",
+      inv: [
+        {
+          inum: "INV/0099",
+          idt: "15-10-2026",
+          val: 12000, // 2B shows 12,000
+          items: [{ txval: 10000, camt: 900, samt: 900, csamt: 200 }],
+        },
+      ],
+    },
+  ];
+
+  const bookPurchases: PurchaseBill[] = [
+    {
+      id: "p-mismatch",
+      invoiceNumber: "INV-99", // Fuzzy match on number
+      date: "2026-10-15",
+      supplierName: "Apex Corp",
+      supplierGstin: "27AABCU9603R1ZN",
+      items: [],
+      interstate: false,
+      itcEligibility: "eligible",
+      paymentStatus: "Paid",
+      taxableAmount: 12000,
+      cgst: 1080,
+      sgst: 1080,
+      igst: 0,
+      cess: 200,
+      total: 14360, // Books show 14,360 (Diff = 2,360)
+      created_at: 1000,
+    },
+  ];
+
+  const { records, summary } = runGstr2bReconciliation(portalSuppliers, bookPurchases);
+
+  assert.equal(records.length, 1);
+  assert.equal(records[0].status, "AMOUNT_MISMATCH");
+  assert.equal(records[0].diff, 2360);
+  assert.equal(records[0].taxDiff, 360); // 2360 tax vs 2000 tax
+  assert.equal(summary.mismatchCount, 1);
+  // Cess (200) + CGST (900) + SGST (900) is included
+  assert.equal(records[0].twoBTax.cess, 200);
+});

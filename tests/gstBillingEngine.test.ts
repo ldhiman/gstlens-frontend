@@ -9,6 +9,7 @@ import {
   getStateCodeFromGSTIN,
   computeHsnSummary,
   validateRule46Invoice,
+  formatLastModified,
 } from "../lib/gstBillingEngine.ts";
 import type { LineItem } from "../lib/gstBillingEngine.ts";
 
@@ -342,4 +343,14 @@ test("getStateCodeFromGSTIN parses 2-digit state code correctly", () => {
   assert.equal(getStateCodeFromGSTIN("27AABCA1234F1Z8"), "27");
   assert.equal(getStateCodeFromGSTIN("07AAACG9876E1ZH"), "07");
   assert.equal(getStateCodeFromGSTIN("INVALID"), "");
+});
+
+test("formatLastModified formats ISO string and timestamp into readable Indian locale string", () => {
+  assert.equal(formatLastModified(undefined), "—");
+  assert.equal(formatLastModified(""), "—");
+  assert.equal(formatLastModified("invalid-date"), "—");
+  
+  const formatted = formatLastModified("2026-11-13T12:00:00.000Z");
+  assert.ok(formatted.includes("Nov") || formatted.includes("11"));
+  assert.ok(formatted.includes("2026"));
 });

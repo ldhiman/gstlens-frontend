@@ -185,48 +185,48 @@ export function PeriodSelector({
         <button
           type="button"
           onClick={() => handleApplyPreset("current_month")}
-          className={`px-3 py-1.5 rounded-xl font-bold transition cursor-pointer flex items-center gap-1.5 shrink-0 ${
+          className={`px-3 py-1.5 rounded-xl font-semibold transition cursor-pointer flex items-center gap-1.5 shrink-0 text-xs ${
             activePreset === "current_month"
-              ? "bg-indigo-600 text-white shadow-2xs"
-              : "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/80"
+              ? "bg-[#047857] text-white shadow-2xs"
+              : "bg-white dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/80"
           }`}
-          title="Current Month"
+          title="Current month"
         >
           <Calendar className="w-3.5 h-3.5" />
-          <span>Current Month</span>
+          <span>Current month</span>
         </button>
 
         <button
           type="button"
           onClick={() => handleApplyPreset("last_month")}
-          className={`px-2.5 py-1.5 rounded-xl font-semibold transition cursor-pointer ${
+          className={`px-2.5 py-1.5 rounded-xl font-medium transition cursor-pointer text-xs ${
             activePreset === "last_month"
-              ? "bg-indigo-600 text-white shadow-2xs"
-              : "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/80"
+              ? "bg-[#047857] text-white shadow-2xs"
+              : "bg-white dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/80"
           }`}
         >
-          Last Month
+          Last month
         </button>
 
         <button
           type="button"
           onClick={() => handleApplyPreset("last_30")}
-          className={`px-2.5 py-1.5 rounded-xl font-semibold transition cursor-pointer ${
+          className={`px-2.5 py-1.5 rounded-xl font-medium transition cursor-pointer text-xs ${
             activePreset === "last_30"
-              ? "bg-indigo-600 text-white shadow-2xs"
-              : "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/80"
+              ? "bg-[#047857] text-white shadow-2xs"
+              : "bg-white dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/80"
           }`}
         >
-          Last 30D
+          Last 30 days
         </button>
 
         <button
           type="button"
           onClick={() => handleApplyPreset("quarter")}
-          className={`px-2.5 py-1.5 rounded-xl font-semibold transition cursor-pointer ${
+          className={`px-2.5 py-1.5 rounded-xl font-medium transition cursor-pointer text-xs ${
             activePreset === "quarter"
-              ? "bg-indigo-600 text-white shadow-2xs"
-              : "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/80"
+              ? "bg-[#047857] text-white shadow-2xs"
+              : "bg-white dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/80"
           }`}
         >
           Quarter
@@ -235,10 +235,10 @@ export function PeriodSelector({
         <button
           type="button"
           onClick={() => handleApplyPreset("fy")}
-          className={`px-2.5 py-1.5 rounded-xl font-semibold transition cursor-pointer ${
+          className={`px-2.5 py-1.5 rounded-xl font-medium transition cursor-pointer text-xs ${
             activePreset === "fy"
-              ? "bg-indigo-600 text-white shadow-2xs"
-              : "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/80"
+              ? "bg-[#047857] text-white shadow-2xs"
+              : "bg-white dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/80"
           }`}
         >
           FY
@@ -246,20 +246,20 @@ export function PeriodSelector({
       </div>
 
       {/* Date Selector: Updates smoothly on pill click, or allows custom date entry */}
-      <div className="inline-flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 shadow-2xs">
-        <span className="text-[11px] font-semibold text-slate-400">From</span>
+      <div className="inline-flex items-center gap-1.5 bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded-xl px-2.5 py-1.5 shadow-2xs">
+        <span className="text-[11px] font-semibold text-stone-400">From</span>
         <input
           type="date"
           value={startDate}
           onChange={(e) => onChange(e.target.value, endDate)}
-          className="bg-transparent text-xs font-bold text-slate-900 dark:text-slate-100 dark:[color-scheme:dark] focus:outline-none cursor-pointer"
+          className="bg-transparent text-xs font-semibold text-stone-900 dark:text-stone-100 dark:[color-scheme:dark] focus:outline-none cursor-pointer"
         />
-        <span className="text-[11px] font-semibold text-slate-400">To</span>
+        <span className="text-[11px] font-semibold text-stone-400">To</span>
         <input
           type="date"
           value={endDate}
           onChange={(e) => onChange(startDate, e.target.value)}
-          className="bg-transparent text-xs font-bold text-slate-900 dark:text-slate-100 dark:[color-scheme:dark] focus:outline-none cursor-pointer"
+          className="bg-transparent text-xs font-semibold text-stone-900 dark:text-stone-100 dark:[color-scheme:dark] focus:outline-none cursor-pointer"
         />
       </div>
     </div>

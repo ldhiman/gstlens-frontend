@@ -20,10 +20,10 @@ function ProfileRedirectContent() {
   }, [router, searchParams]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+    <div className="min-h-screen flex items-center justify-center bg-[#fafaf9] dark:bg-[#141415] text-stone-900 dark:text-stone-100">
       <div className="text-center space-y-3">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
-        <p className="text-xs font-semibold text-slate-500">Redirecting to Settings & Account...</p>
+        <Loader2 className="w-8 h-8 animate-spin text-[#047857] mx-auto" />
+        <p className="text-xs font-medium text-stone-500">Redirecting to Settings & Account...</p>
       </div>
     </div>
   );
@@ -33,8 +33,8 @@ export default function ProfilePage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <div className="min-h-screen flex items-center justify-center bg-[#fafaf9] dark:bg-[#141415]">
+          <Loader2 className="w-8 h-8 animate-spin text-[#047857]" />
         </div>
       }
     >

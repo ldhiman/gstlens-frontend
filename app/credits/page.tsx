@@ -47,12 +47,12 @@ export default function CreditsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="min-h-screen flex items-center justify-center bg-[#fafaf9] dark:bg-[#141415]">
         <div className="text-center">
-          <div className="w-14 h-14 bg-indigo-50 dark:bg-indigo-950/60 rounded-2xl flex items-center justify-center mx-auto mb-3 animate-pulse text-indigo-600 dark:text-indigo-400">
+          <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl flex items-center justify-center mx-auto mb-3 text-[#047857] dark:text-emerald-400">
             <Coins className="w-8 h-8" />
           </div>
-          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Loading your credits & billing...</p>
+          <p className="text-stone-500 dark:text-stone-400 text-sm font-medium">Loading your credits & billing...</p>
         </div>
       </div>
     );
@@ -170,9 +170,7 @@ export default function CreditsPage() {
         description: `Buy ${creditAmount} credits (GST Included)`,
         image: "/logo.png",
         handler: () => {
-          toast.success(`Success! Added ${creditAmount} credits to your account.`, {
-            icon: "🎉",
-          });
+          toast.success(`Success! Added ${creditAmount} credits to your account.`);
           window.dispatchEvent(new Event(UPDATE_CREDIT_EVENT));
           setTimeout(() => window.location.reload(), 800);
         },
@@ -180,7 +178,7 @@ export default function CreditsPage() {
           email: userProfile?.email || "",
           name: userProfile?.name || userProfile?.displayName || "",
         },
-        theme: { color: "#4f46e5" },
+        theme: { color: "#047857" },
         modal: { ondismiss: () => setIsProcessing(false) },
       };
 
@@ -309,27 +307,27 @@ export default function CreditsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors pb-24 md:pb-16">
+    <div className="min-h-screen bg-[#fafaf9] dark:bg-[#141415] text-stone-900 dark:text-stone-100 transition-colors pb-24 md:pb-16">
       {/* Sticky Top Header */}
-      <header className="sticky top-0 z-20 bg-white/85 dark:bg-slate-950/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800 transition-colors">
+      <header className="sticky top-0 z-20 bg-white/90 dark:bg-[#141415]/90 backdrop-blur-md border-b border-stone-200/80 dark:border-stone-800 transition-colors">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.push("/dashboard")}
-              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition flex items-center gap-1.5 font-medium text-xs sm:text-sm"
+              className="p-2 rounded-xl text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition flex items-center gap-1.5 font-medium text-xs sm:text-sm"
               aria-label="Back to dashboard"
             >
               <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
               <span className="hidden sm:inline">Dashboard</span>
             </button>
-            <div className="w-px h-5 bg-slate-200 dark:bg-slate-800" />
+            <div className="w-px h-5 bg-stone-200 dark:bg-stone-800" />
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-900 dark:text-white">
+              <div className="w-8 h-8 rounded-xl bg-[#047857] text-white flex items-center justify-center font-medium">
                 <Coins className="w-4 h-4" />
               </div>
               <div>
                 <h1 className="text-sm sm:text-base font-bold tracking-tight">Credits & Billing</h1>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                <p className="text-[10px] text-stone-500 dark:text-stone-400">
                   Manage credits and subscription
                 </p>
               </div>
@@ -337,7 +335,7 @@ export default function CreditsPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="hidden md:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+            <span className="hidden md:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50 font-mono text-xs">
               <ShieldCheck className="w-3.5 h-3.5" /> 100% Tax Deductible
             </span>
             <ThemeToggle />
@@ -347,14 +345,14 @@ export default function CreditsPage() {
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8">
         {/* 1. Account Balance Card */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs">
+        <div className="bg-white dark:bg-[#1a1a1c] border border-stone-200/80 dark:border-stone-800 rounded-2xl p-6 shadow-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-2">
               <div className="flex items-center gap-2.5">
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                <span className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
                   Account Balance
                 </span>
-                <span className="px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                <span className="px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-stone-100 dark:bg-stone-800 text-slate-700 dark:text-slate-300">
                   {isUnlimited
                     ? "Enterprise Unlimited"
                     : hasSubscription
@@ -364,15 +362,15 @@ export default function CreditsPage() {
               </div>
 
               <div className="flex items-baseline gap-3">
-                <span className="text-4xl font-extrabold text-slate-900 dark:text-white font-mono tabular-nums">
+                <span className="text-4xl font-extrabold text-stone-900 dark:text-stone-100 font-mono tabular-nums">
                   {isUnlimited ? "∞" : credits}
                 </span>
-                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                <span className="text-sm font-medium text-stone-500 dark:text-stone-400">
                   {isUnlimited ? "unlimited scans unlocked" : credits === 1 ? "credit remaining" : "credits remaining"}
                 </span>
               </div>
 
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-stone-500 dark:text-stone-400">
                 1 credit = 1 invoice scanned. Data export, reports, and edits are always free.
               </p>
             </div>
@@ -381,7 +379,7 @@ export default function CreditsPage() {
               <div className="flex items-center">
                 <a
                   href="#packs"
-                  className="py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-xs transition inline-flex items-center gap-1.5"
+                  className="py-2.5 px-4 rounded-xl bg-[#047857] hover:bg-[#065f46] text-white font-medium text-xs shadow-xs transition inline-flex items-center gap-1.5"
                 >
                   <Sparkles className="w-4 h-4" />
                   <span>Recharge Credits</span>
@@ -395,27 +393,27 @@ export default function CreditsPage() {
         <section className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <h2 className="text-lg sm:text-xl font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
                 {isCustomPlan ? (
                   <>
-                    <Sparkles className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                    <Sparkles className="w-5 h-5 text-[#047857] dark:text-emerald-400" />
                     Custom Partner Tier
                   </>
                 ) : (
                   <>
-                    <Cloud className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                    <Cloud className="w-5 h-5 text-[#047857] dark:text-emerald-400" />
                     Pro Monthly Subscription
                   </>
                 )}
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
                 {isCustomPlan
                   ? "Exclusive negotiated plan with customized quota, cloud sync, and priority compliance."
                   : "Automated monthly refill with multi-device cloud backup & continuous synchronization"}
               </p>
             </div>
             {hasSubscription && (
-              <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
+              <span className="text-xs font-mono text-stone-500 dark:text-stone-400">
                 {renewalDate ? `Valid until: ${renewalDate}` : "Active Auto-Refill"}
               </span>
             )}
@@ -423,29 +421,29 @@ export default function CreditsPage() {
 
           {isCustomPlan ? (
             /* Custom Plan Display */
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs relative">
+            <div className="bg-white dark:bg-[#1a1a1c] border border-stone-200/80 dark:border-stone-800 rounded-2xl p-6 shadow-xs relative">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="space-y-4 max-w-lg">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400 flex-shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-[#047857] dark:text-emerald-400 flex-shrink-0">
                       <Sparkles className="w-5 h-5" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                        <h3 className="text-lg font-bold text-stone-900 dark:text-stone-100">
                           {sub?.plan || "Custom Partner Suite"}
                         </h3>
-                        <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-semibold px-2 py-0.5 rounded">
+                        <span className="bg-stone-100 dark:bg-stone-800 text-slate-700 dark:text-slate-300 text-[10px] font-semibold px-2 py-0.5 rounded">
                           Custom Deal
                         </span>
                       </div>
                       <div className="flex items-baseline gap-2 mt-0.5">
                         {sub?.deal_amount ? (
-                          <span className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 font-mono tabular-nums">
+                          <span className="text-2xl font-extrabold text-stone-900 dark:text-stone-100 font-mono tabular-nums">
                             ₹{sub.deal_amount}
                           </span>
                         ) : null}
-                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                        <span className="text-xs font-medium text-stone-500 dark:text-stone-400">
                           ({sub?.billing_cycle || "Custom Agreement"})
                         </span>
                       </div>
@@ -472,7 +470,7 @@ export default function CreditsPage() {
                       <span>Dedicated direct compliance support from GSTLens team</span>
                     </li>
                     {sub?.notes && (
-                      <li className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 italic">
+                      <li className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-stone-200/80 dark:border-stone-800 text-[11px] text-slate-600 dark:text-slate-400 italic">
                         &quot;{sub.notes}&quot;
                       </li>
                     )}
@@ -480,11 +478,11 @@ export default function CreditsPage() {
                 </div>
 
                 <div className="flex flex-col justify-center sm:min-w-[200px] gap-2.5">
-                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 text-center space-y-0.5">
+                  <div className="p-3.5 rounded-xl bg-stone-50 dark:bg-stone-900/50 border border-stone-200/80 dark:border-stone-800 text-center space-y-0.5">
                     <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
                       Status: Active Deal
                     </p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    <p className="text-[11px] text-stone-500 dark:text-stone-400">
                       {renewalDate ? `Valid until: ${renewalDate}` : "Active Partnership"}
                     </p>
                   </div>
@@ -502,16 +500,16 @@ export default function CreditsPage() {
             </div>
           ) : (
             /* Standard Razorpay Card */
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs relative">
+            <div className="bg-white dark:bg-[#1a1a1c] border border-stone-200/80 dark:border-stone-800 rounded-2xl p-6 shadow-xs relative">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="space-y-4 max-w-lg">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400 flex-shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-[#047857] dark:text-emerald-400 flex-shrink-0">
                       <Cloud className="w-5 h-5" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                        <h3 className="text-lg font-bold text-stone-900 dark:text-stone-100">
                           Pro Monthly Plan
                         </h3>
                         {hasSubscription && (
@@ -527,10 +525,10 @@ export default function CreditsPage() {
                         )}
                       </div>
                       <div className="flex items-baseline gap-2 mt-0.5">
-                        <span className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 font-mono tabular-nums">
+                        <span className="text-2xl font-extrabold text-stone-900 dark:text-stone-100 font-mono tabular-nums">
                           ₹499
                         </span>
-                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                        <span className="text-xs font-medium text-stone-500 dark:text-stone-400">
                           / month (Includes 100 credits + Cloud Sync)
                         </span>
                       </div>
@@ -565,7 +563,7 @@ export default function CreditsPage() {
                       <span>Priority compliance &amp; prompt technical assistance</span>
                     </li>
                     <li className="flex items-center gap-2">
-                      <Infinity className="w-4 h-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />
+                      <Infinity className="w-4 h-4 text-stone-500 dark:text-stone-400 flex-shrink-0" />
                       <span>Zero lock-in: Cancel mandate directly from app or UPI anytime</span>
                     </li>
                   </ul>
@@ -579,7 +577,7 @@ export default function CreditsPage() {
                         <button
                           onClick={restartSubscription}
                           disabled={isProcessing}
-                          className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-xs transition flex items-center justify-center gap-2 disabled:opacity-50"
+                          className="w-full py-2.5 px-4 rounded-xl bg-[#047857] hover:bg-[#065f46] text-white font-medium text-xs shadow-xs transition flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
                           {isProcessing ? "Connecting..." : "Restart Subscription"}
@@ -587,7 +585,7 @@ export default function CreditsPage() {
                         <button
                           onClick={syncSubscription}
                           disabled={isProcessing}
-                          className="w-full py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+                          className="w-full py-2 px-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
                           title="Fetch live subscription status directly from Razorpay"
                         >
                           <RefreshCw className={`w-3.5 h-3.5 ${isProcessing ? "animate-spin" : ""}`} />
@@ -596,11 +594,11 @@ export default function CreditsPage() {
                       </>
                     ) : (
                       <>
-                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 text-center">
+                        <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-900/50 border border-stone-200/80 dark:border-stone-800 text-center">
                           <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
                             Status: Active Plan
                           </p>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                          <p className="text-[10px] text-stone-500 dark:text-stone-400 mt-0.5">
                             {renewalDate ? `Next cycle: ${renewalDate}` : "Auto-renews monthly"}
                           </p>
                         </div>
@@ -608,7 +606,7 @@ export default function CreditsPage() {
                         <button
                           onClick={syncSubscription}
                           disabled={isProcessing}
-                          className="w-full py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+                          className="w-full py-2 px-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
                           title="Fetch live subscription status directly from Razorpay"
                         >
                           <RefreshCw className={`w-3.5 h-3.5 ${isProcessing ? "animate-spin" : ""}`} />
@@ -627,7 +625,7 @@ export default function CreditsPage() {
                     <button
                       onClick={subscribeToPlan}
                       disabled={isProcessing}
-                      className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-xs transition flex items-center justify-center gap-2 disabled:opacity-50"
+                      className="w-full py-2.5 px-4 rounded-xl bg-[#047857] hover:bg-[#065f46] text-white font-medium text-xs shadow-xs transition flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       <CreditCard className="w-4 h-4" />
                       {isProcessing ? "Connecting..." : "Subscribe to Pro (₹499/mo)"}
@@ -640,29 +638,29 @@ export default function CreditsPage() {
 
           {/* Upcoming / Queued Subscription Card */}
           {hasUpcoming && upcomingSub && (
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs mt-4">
+            <div className="bg-white dark:bg-[#1a1a1c] border border-stone-200/80 dark:border-stone-800 rounded-2xl p-6 shadow-xs mt-4">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="space-y-3 max-w-lg">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400 flex-shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-[#047857] dark:text-emerald-400 flex-shrink-0">
                       <Clock className="w-5 h-5" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                        <h3 className="text-base font-bold text-stone-900 dark:text-stone-100">
                           {upcomingSub.plan || "Custom Upcoming Plan"}
                         </h3>
-                        <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-semibold px-2 py-0.5 rounded">
+                        <span className="bg-stone-100 dark:bg-stone-800 text-slate-700 dark:text-slate-300 text-[10px] font-semibold px-2 py-0.5 rounded">
                           Upcoming
                         </span>
                       </div>
                       <div className="flex items-baseline gap-2 mt-0.5">
                         {upcomingSub.deal_amount ? (
-                          <span className="text-xl font-bold text-slate-900 dark:text-slate-100 font-mono">
+                          <span className="text-xl font-bold text-stone-900 dark:text-stone-100 font-mono">
                             ₹{upcomingSub.deal_amount}
                           </span>
                         ) : null}
-                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                        <span className="text-xs font-medium text-stone-500 dark:text-stone-400">
                           ({upcomingSub.billing_cycle || "Custom"}) • {upcomingSub.duration_days} days
                         </span>
                       </div>
@@ -678,25 +676,25 @@ export default function CreditsPage() {
                     </li>
                     {upcomingSub.unlimited_credits && (
                       <li className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+                        <CheckCircle2 className="w-4 h-4 text-[#047857] dark:text-emerald-400 flex-shrink-0" />
                         <span>
                           <strong>VIP Access:</strong> Unlimited AI scans active now
                         </span>
                       </li>
                     )}
                     {upcomingSub.notes && (
-                      <li className="text-[11px] text-slate-500 dark:text-slate-400 italic">
+                      <li className="text-[11px] text-stone-500 dark:text-stone-400 italic">
                         &quot;{upcomingSub.notes}&quot;
                       </li>
                     )}
                   </ul>
                 </div>
 
-                <div className="flex flex-col justify-center sm:min-w-[180px] text-center p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-0.5">
+                <div className="flex flex-col justify-center sm:min-w-[180px] text-center p-3.5 rounded-xl bg-stone-50 dark:bg-stone-900/50 border border-stone-200/80 dark:border-stone-800 space-y-0.5">
                   <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
                     Queued
                   </span>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  <p className="text-[11px] text-stone-500 dark:text-stone-400">
                     Activates {upcomingStartDate}
                   </p>
                 </div>
@@ -708,10 +706,10 @@ export default function CreditsPage() {
         {/* 3. One-Time Credit Packs */}
         <section id="packs" className="space-y-4 scroll-mt-24">
           <div>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100">
+            <h2 className="text-lg sm:text-xl font-bold text-stone-900 dark:text-stone-100">
               Pay-As-You-Go Credit Packs
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
               One-time purchase • No recurring charges • Credits never expire
             </p>
           </div>
@@ -723,17 +721,17 @@ export default function CreditsPage() {
                 <div
                   key={pack.credits}
                   onClick={() => setSelectedPackIndex(idx)}
-                  className={`bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-xs relative cursor-pointer transition-all ${
+                  className={`bg-white dark:bg-[#1a1a1c] rounded-2xl p-6 shadow-xs relative cursor-pointer transition-all ${
                     pack.popular
-                      ? "border-2 border-indigo-600"
+                      ? "border-2 border-[#047857]"
                       : isSelected
-                      ? "border border-indigo-500"
-                      : "border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
+                      ? "border border-[#047857]"
+                      : "border border-stone-200/80 dark:border-stone-800 hover:border-slate-300 dark:hover:border-slate-700"
                   }`}
                 >
                   {/* Floating Badges */}
                   {pack.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-3 py-0.5 rounded-full text-[10px] font-semibold tracking-wide uppercase">
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#047857] text-white px-3 py-0.5 rounded-full text-[10px] font-semibold tracking-wide uppercase">
                       Most Popular
                     </div>
                   )}
@@ -744,22 +742,22 @@ export default function CreditsPage() {
                   )}
 
                   <div className="text-center">
-                    <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                    <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-slate-600 dark:text-slate-400">
                       {pack.tier}
                     </span>
 
-                    <h4 className="text-3xl font-extrabold font-mono tabular-nums text-slate-900 dark:text-slate-100 mt-2">
+                    <h4 className="text-3xl font-extrabold font-mono tabular-nums text-stone-900 dark:text-stone-100 mt-2">
                       {pack.credits}
                     </h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
                       Credits
                     </p>
 
-                    <div className="mt-4 pb-4 border-b border-slate-100 dark:border-slate-800">
-                      <p className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 font-mono tabular-nums">
+                    <div className="mt-4 pb-4 border-b border-stone-100 dark:border-stone-800">
+                      <p className="text-2xl font-extrabold text-stone-900 dark:text-stone-100 font-mono tabular-nums">
                         ₹{pack.priceRupees}
                       </p>
-                      <p className="text-xs font-mono text-slate-500 dark:text-slate-400 font-medium mt-0.5 tabular-nums">
+                      <p className="text-xs font-mono text-stone-500 dark:text-stone-400 font-medium mt-0.5 tabular-nums">
                         {pack.perInvoice}
                       </p>
                       <p className="text-[10px] text-slate-400 mt-0.5">
@@ -775,7 +773,7 @@ export default function CreditsPage() {
                       disabled={isProcessing}
                       className={`mt-4 w-full py-2.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50 ${
                         pack.popular
-                          ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
+                          ? "bg-[#047857] hover:bg-[#065f46] text-white shadow-xs"
                           : "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white"
                       }`}
                     >
@@ -790,49 +788,49 @@ export default function CreditsPage() {
         </section>
 
         {/* 4. B2B Trust, Security & Regulatory Matrix */}
-        <section className="bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-          <div className="flex items-center gap-2 text-slate-900 dark:text-slate-100 font-bold text-sm sm:text-base">
+        <section className="bg-white dark:bg-[#1a1a1c] rounded-2xl p-6 sm:p-8 border border-stone-200/80 dark:border-stone-800 shadow-xs space-y-4">
+          <div className="flex items-center gap-2 text-stone-900 dark:text-stone-100 font-bold text-sm sm:text-base">
             <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             Fintech Security & Statutory Assurance
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-1">
-              <span className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+            <div className="p-3.5 rounded-xl bg-stone-50 dark:bg-stone-900/40 border border-stone-200/80 dark:border-stone-800 space-y-1">
+              <span className="text-xs font-bold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                 RBI e-Mandate Compliant
               </span>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed">
                 Full adherence to RBI recurring guidelines with 24-hr pre-debit notifications.
               </p>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-1">
-              <span className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-indigo-600" />
+            <div className="p-3.5 rounded-xl bg-stone-50 dark:bg-stone-900/40 border border-stone-200/80 dark:border-stone-800 space-y-1">
+              <span className="text-xs font-bold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-[#047857]" />
                 256-Bit TLS Encryption
               </span>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed">
                 Razorpay PCI-DSS Level 1 certified gateway with bank-grade encryption.
               </p>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-1">
-              <span className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+            <div className="p-3.5 rounded-xl bg-stone-50 dark:bg-stone-900/40 border border-stone-200/80 dark:border-stone-800 space-y-1">
+              <span className="text-xs font-bold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
                 18% GST Input Credit
               </span>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed">
                 B2B GST invoice provided automatically to claim full tax deduction.
               </p>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-1">
-              <span className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+            <div className="p-3.5 rounded-xl bg-stone-50 dark:bg-stone-900/40 border border-stone-200/80 dark:border-stone-800 space-y-1">
+              <span className="text-xs font-bold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
                 <RotateCcw className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
                 Zero Lock-In Freedom
               </span>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed">
                 Cancel or modify mandate anytime directly from dashboard or any UPI app.
               </p>
             </div>
@@ -840,9 +838,9 @@ export default function CreditsPage() {
         </section>
 
         {/* 5. Interactive FAQ Accordion */}
-        <section className="bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-          <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <HelpCircle className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+        <section className="bg-white dark:bg-[#1a1a1c] rounded-2xl p-6 sm:p-8 border border-stone-200/80 dark:border-stone-800 shadow-xs space-y-4">
+          <h2 className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
+            <HelpCircle className="w-4 h-4 text-[#047857] dark:text-emerald-400" />
             Frequently Asked Questions
           </h2>
 
@@ -871,7 +869,7 @@ export default function CreditsPage() {
                   <button
                     type="button"
                     onClick={() => setExpandedFaq(isOpen ? null : idx)}
-                    className="w-full text-left flex items-center justify-between gap-4 font-semibold text-xs sm:text-sm text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
+                    className="w-full text-left flex items-center justify-between gap-4 font-semibold text-xs sm:text-sm text-slate-800 dark:text-slate-200 hover:text-[#047857] dark:hover:text-emerald-400 transition"
                   >
                     <span>{faq.q}</span>
                     <span className="text-slate-400">
@@ -879,7 +877,7 @@ export default function CreditsPage() {
                     </span>
                   </button>
                   {isOpen && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed pl-1">
+                    <p className="text-xs text-stone-500 dark:text-stone-400 mt-2 leading-relaxed pl-1">
                       {faq.a}
                     </p>
                   )}
@@ -893,14 +891,14 @@ export default function CreditsPage() {
       {/* Cancel Confirmation Modal */}
       {showCancelModal && (
         <div className="fixed inset-0 bg-black/60 dark:bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-2xl shadow-xl max-w-md w-full p-6 sm:p-8 border border-slate-200 dark:border-slate-800 animate-scale-in">
+          <div className="bg-white dark:bg-slate-900 text-stone-900 dark:text-stone-100 rounded-2xl shadow-xl max-w-md w-full p-6 sm:p-8 border border-stone-200/80 dark:border-stone-800 animate-scale-in">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-rose-50 dark:bg-rose-950/60 rounded-xl flex items-center justify-center text-rose-600 dark:text-rose-400 flex-shrink-0">
                 <AlertCircle className="w-5 h-5" />
               </div>
               <div>
                 <h3 className="text-lg font-bold">Cancel Pro Subscription?</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-stone-500 dark:text-stone-400">
                   Recurring auto-refill will be paused
                 </p>
               </div>
@@ -914,7 +912,7 @@ export default function CreditsPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowCancelModal(false)}
-                className="flex-1 py-3 rounded-xl border border-slate-200 dark:border-slate-700 font-semibold text-xs sm:text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition min-h-[44px]"
+                className="flex-1 py-3 rounded-xl border border-stone-200 dark:border-stone-700 font-semibold text-xs sm:text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition min-h-[44px]"
               >
                 Keep Plan
               </button>

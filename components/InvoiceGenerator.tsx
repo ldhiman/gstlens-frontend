@@ -444,7 +444,7 @@ export default function InvoiceGenerator({
   };
 
   // Save invoice
-  const handleSaveInvoice = async (printImmediately: boolean = false) => {
+  const handleSaveInvoice = async (printImmediately: boolean = false, isDraft: boolean = false) => {
     if (!invoiceNumber.trim()) {
       toast.error("Invoice number is mandatory");
       return;
@@ -512,29 +512,37 @@ export default function InvoiceGenerator({
         notes,
         payment_status: paymentStatus,
         paymentStatus: paymentStatus,
+        status: isDraft ? "draft" : "confirmed",
         created_at: initialData?.created_at || Date.now(),
       };
 
-      const savedId = await saveInvoiceDraft(invoicePayload, "confirmed");
+      const savedId = await saveInvoiceDraft(
+        invoicePayload,
+        isDraft ? "draft" : "confirmed"
+      );
 
-      // Apply inventory stock adjustments
-      const stockFactor = docConfig.stockEffect;
-      if (stockFactor !== 0) {
-        for (const it of items) {
-          const matchedProd = products.find(
-            (p) => p.name.toLowerCase() === it.name.toLowerCase() || (it.hsn && p.hsn === it.hsn)
-          );
-          if (matchedProd && !matchedProd.isService) {
-            // e.g. stockEffect 1 (sales) reduces stock (-qty), credit note adds stock (+qty)
-            await adjustProductStock(matchedProd.id, -1 * stockFactor * it.quantity);
+      // Apply inventory stock adjustments ONLY when confirmed
+      if (!isDraft) {
+        const stockFactor = docConfig.stockEffect;
+        if (stockFactor !== 0) {
+          for (const it of items) {
+            const matchedProd = products.find(
+              (p) => p.name.toLowerCase() === it.name.toLowerCase() || (it.hsn && p.hsn === it.hsn)
+            );
+            if (matchedProd && !matchedProd.isService) {
+              // e.g. stockEffect 1 (sales) reduces stock (-qty), credit note adds stock (+qty)
+              await adjustProductStock(matchedProd.id, -1 * stockFactor * it.quantity);
+            }
           }
         }
       }
 
       toast.success(
-        isEditing
-          ? `${docConfig.label} ${invoiceNumber} updated!`
-          : `${docConfig.label} ${invoiceNumber} saved!`
+        isDraft
+          ? `Draft ${invoiceNumber} saved! Kept separate under Invoices > Draft Bills.`
+          : isEditing
+          ? `${docConfig.label} ${invoiceNumber} updated & confirmed!`
+          : `${docConfig.label} ${invoiceNumber} saved & confirmed!`
       );
 
       if (printImmediately) {
@@ -550,20 +558,20 @@ export default function InvoiceGenerator({
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6">
       {/* Header Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-[#1a1a1c] p-6 rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-sm">
         <div className="flex items-center gap-4">
           {onCancel && (
             <button
               onClick={onCancel}
-              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition text-slate-500"
+              className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition text-stone-500"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
           )}
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <FileText className="w-6 h-6 text-blue-600" />
+              <h1 className="text-xl md:text-2xl font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                <FileText className="w-6 h-6 text-[#047857]" />
                 {isEditing ? `Edit ${docConfig.title} #${invoiceNumber}` : docConfig.title}
               </h1>
               {isEditing && (
@@ -572,7 +580,7 @@ export default function InvoiceGenerator({
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
               GST Rule 46 Compliant • Multi-Currency • UPI Dynamic QR • E-Way Bill Ready
             </p>
           </div>
@@ -583,7 +591,7 @@ export default function InvoiceGenerator({
           <select
             value={docType}
             onChange={(e) => handleDocTypeChange(e.target.value as DocumentType)}
-            className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white text-xs font-semibold rounded-xl border-none focus:ring-2 focus:ring-blue-500"
+            className="px-4 py-2 bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-stone-100 text-xs font-semibold rounded-xl border-none focus:ring-2 focus:ring-[#047857]"
           >
             {Object.values(DOCUMENT_TYPES).map((dt) => (
               <option key={dt.id} value={dt.id}>
@@ -594,18 +602,27 @@ export default function InvoiceGenerator({
 
           <button
             onClick={() => setShowPreviewModal(true)}
-            className="flex items-center gap-1.5 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition"
+            className="flex items-center gap-1.5 px-4 py-2 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 text-xs font-semibold rounded-xl transition"
           >
-            <Eye className="w-4 h-4 text-slate-500" />
+            <Eye className="w-4 h-4 text-stone-500" />
             Preview
           </button>
 
           <button
-            onClick={() => handleSaveInvoice(false)}
-            className="flex items-center gap-1.5 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow transition"
+            onClick={() => handleSaveInvoice(false, true)}
+            className="flex items-center gap-1.5 px-4 py-2 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 hover:bg-amber-100 text-xs font-semibold rounded-xl transition cursor-pointer"
+            title="Save as draft without adding to confirmed sales turnover"
+          >
+            <Clock className="w-4 h-4 text-amber-500" />
+            Save as Draft
+          </button>
+
+          <button
+            onClick={() => handleSaveInvoice(false, false)}
+            className="flex items-center gap-1.5 px-5 py-2 bg-[#047857] hover:bg-[#065f46] text-white text-xs font-bold rounded-xl shadow transition cursor-pointer"
           >
             <Save className="w-4 h-4" />
-            {isEditing ? "Update & Save" : "Save Invoice"}
+            {isEditing ? "Update & Confirm" : "Confirm & Save"}
           </button>
         </div>
       </div>
@@ -613,24 +630,24 @@ export default function InvoiceGenerator({
       {/* Primary Details Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Recipient / Client */}
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+        <div className="bg-white dark:bg-[#1a1a1c] p-6 rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-blue-600" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-[#047857]" />
               Bill To (Customer)
             </h3>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={handleSetWalkinCustomer}
-                className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 bg-slate-100 dark:bg-slate-700 px-2.5 py-1 rounded-lg transition"
+                className="text-[11px] font-semibold text-stone-600 dark:text-stone-300 hover:text-[#047857] dark:hover:text-blue-400 bg-stone-100 dark:bg-stone-800 px-2.5 py-1 rounded-lg transition"
               >
                 Cash Walk-in
               </button>
               <button
                 type="button"
                 onClick={() => setShowAddClientModal(true)}
-                className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                className="text-xs font-semibold text-[#047857] hover:text-[#065f46] flex items-center gap-1"
               >
                 <Plus className="w-3.5 h-3.5" />
                 New Party
@@ -639,16 +656,16 @@ export default function InvoiceGenerator({
           </div>
 
           {/* Quick GSTIN Lookup Bar for Walk-in B2B */}
-          <div className="p-2.5 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-700/60 space-y-1.5">
+          <div className="p-2.5 bg-stone-50 dark:bg-stone-900/60/60 rounded-xl border border-stone-200/80 dark:border-stone-800/60 space-y-1.5">
             <div className="flex items-center justify-between text-[11px]">
-              <span className="font-semibold text-slate-600 dark:text-slate-400">
+              <span className="font-semibold text-slate-600 dark:text-stone-400">
                 Quick GSTIN Auto-Fill
               </span>
               <button
                 type="button"
                 onClick={() => handleQuickGstFillForBuyer()}
                 disabled={isFetchingGst || quickBuyerGstin.length < 15}
-                className="font-bold text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-40 cursor-pointer"
+                className="font-bold text-[#047857] dark:text-emerald-400 hover:underline disabled:opacity-40 cursor-pointer"
               >
                 {isFetchingGst ? "Fetching..." : "Auto-Fill"}
               </button>
@@ -666,13 +683,13 @@ export default function InvoiceGenerator({
                     handleQuickGstFillForBuyer(val);
                   }
                 }}
-                className="flex-1 px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono uppercase font-bold text-slate-900 dark:text-white"
+                className="flex-1 px-2.5 py-1.5 bg-white dark:bg-[#1a1a1c] border border-stone-200/80 dark:border-stone-800 rounded-lg text-xs font-mono uppercase font-bold text-stone-900 dark:text-stone-100"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">
+            <label className="text-[11px] font-semibold text-slate-600 dark:text-stone-400 block mb-1">
               Select Saved Client
             </label>
             <select
@@ -681,7 +698,7 @@ export default function InvoiceGenerator({
                 const found = clients.find((c) => c.id === e.target.value);
                 if (found) handleClientSelect(found);
               }}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white"
+              className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 rounded-xl text-xs text-stone-900 dark:text-stone-100"
             >
               <option value="">-- Choose Party or Walk-in --</option>
               {clients.map((c) => (
@@ -693,12 +710,12 @@ export default function InvoiceGenerator({
           </div>
 
           {selectedClient.name && (
-            <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl text-xs space-y-1 text-slate-600 dark:text-slate-300">
-              <p className="font-bold text-slate-900 dark:text-white">{selectedClient.name}</p>
+            <div className="p-3 bg-stone-50 dark:bg-stone-900/60/60 rounded-xl text-xs space-y-1 text-stone-600 dark:text-stone-300">
+              <p className="font-bold text-stone-900 dark:text-stone-100">{selectedClient.name}</p>
               {selectedClient.address && <p>{selectedClient.address}</p>}
               <p>
-                <span className="font-medium text-slate-500">GSTIN:</span>{" "}
-                <span className="font-mono font-semibold text-blue-600 dark:text-blue-400">
+                <span className="font-medium text-stone-500">GSTIN:</span>{" "}
+                <span className="font-mono font-semibold text-[#047857] dark:text-emerald-400">
                   {selectedClient.gstin || "Unregistered (B2C)"}
                 </span>
               </p>
@@ -708,57 +725,57 @@ export default function InvoiceGenerator({
         </div>
 
         {/* Invoice Metadata */}
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-blue-600" />
+        <div className="bg-white dark:bg-[#1a1a1c] p-6 rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-sm space-y-4">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-[#047857]" />
             Document Particulars
           </h3>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">
+              <label className="text-[11px] font-semibold text-slate-600 dark:text-stone-400 block mb-1">
                 Invoice Number
               </label>
               <input
                 type="text"
                 value={invoiceNumber}
                 onChange={(e) => setInvoiceNumber(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-900 dark:text-white"
+                className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 rounded-xl text-xs font-mono font-bold text-stone-900 dark:text-stone-100"
               />
             </div>
             <div>
-              <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">
+              <label className="text-[11px] font-semibold text-slate-600 dark:text-stone-400 block mb-1">
                 Invoice Date
               </label>
               <input
                 type="date"
                 value={invoiceDate}
                 onChange={(e) => setInvoiceDate(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white"
+                className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 rounded-xl text-xs text-stone-900 dark:text-stone-100"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">
+              <label className="text-[11px] font-semibold text-slate-600 dark:text-stone-400 block mb-1">
                 Due Date
               </label>
               <input
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white"
+                className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 rounded-xl text-xs text-stone-900 dark:text-stone-100"
               />
             </div>
             <div>
-              <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">
+              <label className="text-[11px] font-semibold text-slate-600 dark:text-stone-400 block mb-1">
                 Place of Supply (POS)
               </label>
               <select
                 value={placeOfSupply}
                 onChange={(e) => setPlaceOfSupply(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white"
+                className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 rounded-xl text-xs text-stone-900 dark:text-stone-100"
               >
                 <option value="">Auto (Derived)</option>
                 {INDIAN_STATES.map((st) => (
@@ -775,17 +792,17 @@ export default function InvoiceGenerator({
               className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
                 isInterstate
                   ? "bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300"
-                  : "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300"
+                  : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50"
               }`}
             >
               {isInterstate ? "Inter-State (IGST)" : "Intra-State (CGST + SGST)"}
             </span>
-            <label className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+            <label className="flex items-center gap-1.5 text-xs text-stone-600 dark:text-stone-300 cursor-pointer">
               <input
                 type="checkbox"
                 checked={reverseCharge}
                 onChange={(e) => setReverseCharge(e.target.checked)}
-                className="rounded text-blue-600"
+                className="rounded text-[#047857]"
               />
               RCM Applicable
             </label>
@@ -793,14 +810,14 @@ export default function InvoiceGenerator({
         </div>
 
         {/* E-Way Bill & Transport */}
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
-            <Truck className="w-4 h-4 text-blue-600" />
+        <div className="bg-white dark:bg-[#1a1a1c] p-6 rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-sm space-y-4">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 flex items-center gap-2">
+            <Truck className="w-4 h-4 text-[#047857]" />
             Transport & E-Way Bill
           </h3>
 
           <div>
-            <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">
+            <label className="text-[11px] font-semibold text-slate-600 dark:text-stone-400 block mb-1">
               e-Way Bill Number (Rule 138)
             </label>
             <input
@@ -808,13 +825,13 @@ export default function InvoiceGenerator({
               placeholder="e.g. 2410 1234 5678"
               value={eWayBillNo}
               onChange={(e) => setEWayBillNo(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono text-slate-900 dark:text-white"
+              className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 rounded-xl text-xs font-mono text-stone-900 dark:text-stone-100"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">
+              <label className="text-[11px] font-semibold text-slate-600 dark:text-stone-400 block mb-1">
                 Vehicle Number
               </label>
               <input
@@ -822,11 +839,11 @@ export default function InvoiceGenerator({
                 placeholder="MH-02-AB-1234"
                 value={vehicleNo}
                 onChange={(e) => setVehicleNo(e.target.value.toUpperCase())}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono uppercase text-slate-900 dark:text-white"
+                className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 rounded-xl text-xs font-mono uppercase text-stone-900 dark:text-stone-100"
               />
             </div>
             <div>
-              <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">
+              <label className="text-[11px] font-semibold text-slate-600 dark:text-stone-400 block mb-1">
                 PO / Reference No
               </label>
               <input
@@ -834,7 +851,7 @@ export default function InvoiceGenerator({
                 placeholder="PO-2026-09"
                 value={poNumber}
                 onChange={(e) => setPoNumber(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white"
+                className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 rounded-xl text-xs text-stone-900 dark:text-stone-100"
               />
             </div>
           </div>
@@ -842,22 +859,22 @@ export default function InvoiceGenerator({
       </div>
 
       {/* Line Items Table */}
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+      <div className="bg-white dark:bg-[#1a1a1c] p-6 rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-sm space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Layers className="w-4 h-4 text-blue-600" />
+          <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
+            <Layers className="w-4 h-4 text-[#047857]" />
             Invoice Line Items
           </h3>
           <div className="flex items-center gap-2">
             <button
               onClick={addDeliveryChargeLine}
-              className="px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 rounded-xl transition"
+              className="px-3 py-1.5 text-xs font-semibold text-stone-700 dark:text-stone-300 bg-stone-100 dark:bg-stone-800 hover:bg-slate-200 rounded-xl transition"
             >
               + Add Shipping / Delivery
             </button>
             <button
               onClick={addItem}
-              className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow transition"
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-[#047857] hover:bg-[#065f46] text-white text-xs font-bold rounded-xl shadow transition"
             >
               <Plus className="w-3.5 h-3.5" />
               Add Row
@@ -868,7 +885,7 @@ export default function InvoiceGenerator({
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse min-w-[760px]">
             <thead>
-              <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-semibold">
+              <tr className="border-b border-stone-200/80 dark:border-stone-800 text-stone-500 dark:text-stone-400 font-semibold">
                 <th className="py-2 px-1 w-8">#</th>
                 <th className="py-2 px-2 w-52">Product / Item</th>
                 <th className="py-2 px-2 w-24">HSN/SAC</th>
@@ -883,7 +900,7 @@ export default function InvoiceGenerator({
                 <th className="py-2 px-1 w-10"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
               {items.map((it, idx) => {
                 const lineCalc = calculateLineTax(
                   it,
@@ -891,8 +908,8 @@ export default function InvoiceGenerator({
                   docConfig.hasTax
                 );
                 return (
-                  <tr key={it.id || idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/20">
-                    <td className="py-2 px-1 font-mono text-slate-400">{idx + 1}</td>
+                  <tr key={it.id || idx} className="hover:bg-stone-50/60 dark:hover:bg-stone-800/40">
+                    <td className="py-2 px-1 font-mono text-stone-400">{idx + 1}</td>
                     <td className="py-2 px-2">
                       <div className="space-y-1">
                         <input
@@ -901,7 +918,7 @@ export default function InvoiceGenerator({
                           value={it.name}
                           onChange={(e) => updateItem(idx, "name", e.target.value)}
                           list={`prod-list-${idx}`}
-                          className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-white"
+                          className="w-full px-2.5 py-1.5 bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 rounded-lg text-xs font-semibold text-stone-900 dark:text-stone-100"
                         />
                         <datalist id={`prod-list-${idx}`}>
                           {products.map((p) => (
@@ -918,7 +935,7 @@ export default function InvoiceGenerator({
                         placeholder="HSN"
                         value={it.hsn || ""}
                         onChange={(e) => updateItem(idx, "hsn", e.target.value)}
-                        className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono text-slate-900 dark:text-white"
+                        className="w-full px-2 py-1.5 bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 rounded-lg text-xs font-mono text-stone-900 dark:text-stone-100"
                       />
                     </td>
                     <td className="py-2 px-2">
@@ -928,14 +945,14 @@ export default function InvoiceGenerator({
                         step="any"
                         value={it.quantity}
                         onChange={(e) => updateItem(idx, "quantity", Number(e.target.value))}
-                        className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-white"
+                        className="w-full px-2 py-1.5 bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 rounded-lg text-xs font-semibold text-stone-900 dark:text-stone-100"
                       />
                     </td>
                     <td className="py-2 px-2">
                       <select
                         value={it.unit || "Pcs"}
                         onChange={(e) => updateItem(idx, "unit", e.target.value)}
-                        className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white"
+                        className="w-full px-2 py-1.5 bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 rounded-lg text-xs text-stone-900 dark:text-stone-100"
                       >
                         {BUILTIN_UNITS.map((u) => (
                           <option key={u.label} value={u.label}>
@@ -951,7 +968,7 @@ export default function InvoiceGenerator({
                         step="any"
                         value={it.rate}
                         onChange={(e) => updateItem(idx, "rate", Number(e.target.value))}
-                        className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono font-semibold text-slate-900 dark:text-white"
+                        className="w-full px-2 py-1.5 bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 rounded-lg text-xs font-mono font-semibold text-stone-900 dark:text-stone-100"
                       />
                     </td>
                     <td className="py-2 px-2">
@@ -961,7 +978,7 @@ export default function InvoiceGenerator({
                         max="100"
                         value={it.discount || 0}
                         onChange={(e) => updateItem(idx, "discount", Number(e.target.value))}
-                        className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white"
+                        className="w-full px-2 py-1.5 bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 rounded-lg text-xs text-stone-900 dark:text-stone-100"
                       />
                     </td>
                     {docConfig.hasTax && (
@@ -969,7 +986,7 @@ export default function InvoiceGenerator({
                         <select
                           value={it.taxPercent}
                           onChange={(e) => updateItem(idx, "taxPercent", Number(e.target.value))}
-                          className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-white"
+                          className="w-full px-2 py-1.5 bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 rounded-lg text-xs font-semibold text-stone-900 dark:text-stone-100"
                         >
                           {GST_RATES.map((r) => (
                             <option key={r} value={r}>
@@ -979,13 +996,13 @@ export default function InvoiceGenerator({
                         </select>
                       </td>
                     )}
-                    <td className="py-2 px-2 text-right font-mono font-bold text-slate-900 dark:text-white">
+                    <td className="py-2 px-2 text-right font-mono font-bold text-stone-900 dark:text-stone-100">
                       {formatINR(lineCalc.totalAmount)}
                     </td>
                     <td className="py-2 px-1 text-center">
                       <button
                         onClick={() => removeItem(idx)}
-                        className="p-1 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded transition"
+                        className="p-1 hover:bg-rose-50 text-stone-400 hover:text-rose-600 rounded transition"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -1001,9 +1018,9 @@ export default function InvoiceGenerator({
       {/* Bottom Section: Notes, Terms & Live Totals */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Terms & Conditions Presets */}
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+        <div className="bg-white dark:bg-[#1a1a1c] p-6 rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
               Terms & Conditions (13 Presets)
             </h3>
             <select
@@ -1011,7 +1028,7 @@ export default function InvoiceGenerator({
                 const found = TERMS_PRESETS.find((p) => p.id === e.target.value);
                 if (found) setTerms(found.body);
               }}
-              className="text-xs font-semibold text-blue-600 bg-transparent border-none cursor-pointer"
+              className="text-xs font-semibold text-[#047857] bg-transparent border-none cursor-pointer"
             >
               {TERMS_PRESETS.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -1025,12 +1042,12 @@ export default function InvoiceGenerator({
             rows={5}
             value={terms}
             onChange={(e) => setTerms(e.target.value)}
-            className="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-200 font-mono"
+            className="w-full p-3 bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 rounded-xl text-xs text-slate-800 dark:text-slate-200 font-mono"
             placeholder="Enter invoice terms and legal notes..."
           />
 
           <div>
-            <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">
+            <label className="text-[11px] font-semibold text-slate-600 dark:text-stone-400 block mb-1">
               Internal Notes / Remarks (Optional)
             </label>
             <input
@@ -1038,13 +1055,13 @@ export default function InvoiceGenerator({
               placeholder="e.g. Paid via UPI reference #9812401"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white"
+              className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 rounded-xl text-xs text-stone-900 dark:text-stone-100"
             />
           </div>
 
           {/* Payment Status Selector */}
           <div className="pt-2 border-t border-slate-100 dark:border-slate-700/60">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-2">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 block mb-2">
               Payment Status
             </label>
             <div className="grid grid-cols-2 gap-2 text-xs font-bold">
@@ -1054,7 +1071,7 @@ export default function InvoiceGenerator({
                 className={`py-2 px-3 rounded-xl border flex items-center justify-center gap-1.5 transition cursor-pointer ${
                   paymentStatus === "Unpaid"
                     ? "bg-rose-50 dark:bg-rose-950/60 border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 shadow-xs"
-                    : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    : "bg-stone-50 dark:bg-stone-900/60 border-stone-200/80 dark:border-stone-800 text-slate-600 dark:text-stone-400 hover:bg-slate-100 dark:hover:bg-slate-800"
                 }`}
               >
                 <Clock className="w-3.5 h-3.5 text-rose-500" />
@@ -1067,7 +1084,7 @@ export default function InvoiceGenerator({
                 className={`py-2 px-3 rounded-xl border flex items-center justify-center gap-1.5 transition cursor-pointer ${
                   paymentStatus === "Paid"
                     ? "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 shadow-xs"
-                    : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    : "bg-stone-50 dark:bg-stone-900/60 border-stone-200/80 dark:border-stone-800 text-slate-600 dark:text-stone-400 hover:bg-slate-100 dark:hover:bg-slate-800"
                 }`}
               >
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -1078,12 +1095,12 @@ export default function InvoiceGenerator({
         </div>
 
         {/* Live Calculation Sidebar */}
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        <div className="bg-white dark:bg-[#1a1a1c] p-6 rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-sm space-y-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
             Invoice Summary & Taxes
           </h3>
 
-          <div className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
+          <div className="space-y-2 text-xs text-stone-600 dark:text-stone-300">
             <div className="flex justify-between">
               <span>Taxable Value:</span>
               <span className="font-mono font-semibold">{formatINR(totals.taxableAmount)}</span>
@@ -1126,38 +1143,46 @@ export default function InvoiceGenerator({
             )}
 
             {totals.roundOff !== 0 && (
-              <div className="flex justify-between text-slate-400">
+              <div className="flex justify-between text-stone-400">
                 <span>Round Off (Section 170):</span>
                 <span className="font-mono">{totals.roundOff > 0 ? `+${totals.roundOff}` : totals.roundOff}</span>
               </div>
             )}
 
-            <div className="pt-3 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center text-sm font-bold text-slate-900 dark:text-white">
+            <div className="pt-3 border-t border-stone-200/80 dark:border-stone-800 flex justify-between items-center text-sm font-bold text-stone-900 dark:text-stone-100">
               <span>Grand Total:</span>
-              <span className="text-xl font-mono text-blue-600 dark:text-blue-400">
+              <span className="text-xl font-mono text-[#047857] dark:text-emerald-400">
                 {formatINR(totals.grandTotal)}
               </span>
             </div>
 
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 italic pt-1">
+            <p className="text-[11px] text-stone-500 dark:text-stone-400 italic pt-1">
               {numberToWords(totals.grandTotal)}
             </p>
           </div>
 
-          <div className="pt-4 flex gap-3">
+          <div className="pt-4 flex flex-wrap gap-3">
             <button
-              onClick={() => handleSaveInvoice(true)}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl shadow transition"
+              onClick={() => handleSaveInvoice(false, true)}
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 hover:bg-amber-100 text-xs font-semibold rounded-xl transition cursor-pointer"
+              title="Save bill as draft without adding to confirmed sales turnover"
             >
-              <Printer className="w-4 h-4" />
-              {isEditing ? "Update & Print" : "Save & Print / PDF"}
+              <Clock className="w-4 h-4 text-amber-500" />
+              Save as Draft
             </button>
             <button
-              onClick={() => handleSaveInvoice(false)}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow transition"
+              onClick={() => handleSaveInvoice(true, false)}
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl shadow transition cursor-pointer"
+            >
+              <Printer className="w-4 h-4" />
+              {isEditing ? "Update & Print" : "Confirm & Print / PDF"}
+            </button>
+            <button
+              onClick={() => handleSaveInvoice(false, false)}
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#047857] hover:bg-[#065f46] text-white text-xs font-bold rounded-xl shadow transition cursor-pointer"
             >
               <Save className="w-4 h-4" />
-              {isEditing ? "Update & Save" : "Save Invoice"}
+              {isEditing ? "Update & Confirm" : "Confirm & Save"}
             </button>
           </div>
         </div>
@@ -1194,14 +1219,14 @@ export default function InvoiceGenerator({
       {/* Quick Add Client Modal */}
       {showAddClientModal && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 animate-scale-in">
+          <div className="bg-white dark:bg-[#1a1a1c] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 animate-scale-in">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+              <h3 className="text-base font-bold text-stone-900 dark:text-stone-100">
                 Add New Customer / Party
               </h3>
               <button
                 onClick={() => setShowAddClientModal(false)}
-                className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-400"
+                className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg text-stone-400"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1209,16 +1234,16 @@ export default function InvoiceGenerator({
 
             <form onSubmit={handleQuickAddClient} className="space-y-3 text-xs">
               {/* GSTIN First with Instant Auto-Fill */}
-              <div className="p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl space-y-1.5">
+              <div className="p-3 bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 rounded-xl space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="font-semibold text-slate-700 dark:text-slate-300 block">
+                  <label className="font-semibold text-stone-700 dark:text-stone-300 block">
                     GSTIN (Optional for B2C)
                   </label>
                   <button
                     type="button"
                     onClick={() => handleModalGstLookup()}
                     disabled={isFetchingGst || !newClientGstin || newClientGstin.length < 15}
-                    className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-40 cursor-pointer"
+                    className="text-[11px] font-bold text-[#047857] dark:text-emerald-400 hover:underline disabled:opacity-40 cursor-pointer"
                   >
                     {isFetchingGst ? "Fetching..." : "Auto-Fill from GST Portal"}
                   </button>
@@ -1235,7 +1260,7 @@ export default function InvoiceGenerator({
                       handleModalGstLookup(val);
                     }
                   }}
-                  className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-mono uppercase font-bold text-slate-900 dark:text-white"
+                  className="w-full px-3 py-1.5 bg-white dark:bg-[#1a1a1c] border border-stone-200/80 dark:border-stone-800 rounded-lg font-mono uppercase font-bold text-stone-900 dark:text-stone-100"
                 />
                 {newClientGstStatus && (
                   <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
@@ -1245,7 +1270,7 @@ export default function InvoiceGenerator({
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                <label className="font-semibold text-stone-700 dark:text-stone-300 block mb-1">
                   Customer / Business Name *
                 </label>
                 <input
@@ -1254,12 +1279,12 @@ export default function InvoiceGenerator({
                   placeholder="e.g. Reliance Retail Ltd"
                   value={newClientName}
                   onChange={(e) => setNewClientName(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl"
+                  className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 rounded-xl"
                 />
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                <label className="font-semibold text-stone-700 dark:text-stone-300 block mb-1">
                   Phone Number
                 </label>
                 <input
@@ -1267,18 +1292,18 @@ export default function InvoiceGenerator({
                   placeholder="+91 98765 43210"
                   value={newClientPhone}
                   onChange={(e) => setNewClientPhone(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl"
+                  className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 rounded-xl"
                 />
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                <label className="font-semibold text-stone-700 dark:text-stone-300 block mb-1">
                   State / Territory
                 </label>
                 <select
                   value={newClientState}
                   onChange={(e) => setNewClientState(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl"
+                  className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 rounded-xl"
                 >
                   {INDIAN_STATES.map((s) => (
                     <option key={s.code} value={s.name}>
@@ -1289,7 +1314,7 @@ export default function InvoiceGenerator({
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                <label className="font-semibold text-stone-700 dark:text-stone-300 block mb-1">
                   Billing Address
                 </label>
                 <textarea
@@ -1297,7 +1322,7 @@ export default function InvoiceGenerator({
                   placeholder="Street address, City, Pincode"
                   value={newClientAddress}
                   onChange={(e) => setNewClientAddress(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl"
+                  className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 rounded-xl"
                 />
               </div>
 
@@ -1305,13 +1330,13 @@ export default function InvoiceGenerator({
                 <button
                   type="button"
                   onClick={() => setShowAddClientModal(false)}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl"
+                  className="px-4 py-2 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 font-semibold rounded-xl"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow"
+                  className="px-5 py-2 bg-[#047857] hover:bg-[#065f46] text-white font-bold rounded-xl shadow"
                 >
                   Save Party
                 </button>

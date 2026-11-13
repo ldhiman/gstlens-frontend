@@ -75,17 +75,17 @@ export default function EditInvoicePage({ params }: EditInvoicePageProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-[#fafaf9] dark:bg-[#141415] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs font-semibold text-slate-500">Loading invoice for editing...</span>
+          <div className="w-8 h-8 border-2 border-[#047857] border-t-transparent rounded-full animate-spin" />
+          <span className="text-xs font-medium text-stone-500">Loading invoice for editing...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 pb-20">
+    <div className="min-h-screen bg-[#fafaf9] dark:bg-[#141415] text-stone-900 dark:text-stone-100 pb-20">
       <Header />
       <InvoiceGenerator
         initialData={initialData}

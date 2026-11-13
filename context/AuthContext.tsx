@@ -11,7 +11,8 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { UPDATE_CREDIT_EVENT } from "@/lib/constants";
-import { getBusinessProfile } from "@/lib/storage";
+import { getBusinessProfile, getAllInvoices } from "@/lib/storage";
+import { seedSandboxData } from "@/lib/sandboxData";
 
 interface AuthContextType {
   user: any;
@@ -19,7 +20,9 @@ interface AuthContextType {
   loading: boolean;
   isOnline: boolean;
   isOfflineMode: boolean;
+  isSandboxMode: boolean;
   enterOfflineMode: () => Promise<void>;
+  enterSandboxMode: () => Promise<void>;
   exitOfflineMode: () => void;
 }
 
@@ -29,7 +32,9 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   isOnline: true,
   isOfflineMode: false,
+  isSandboxMode: false,
   enterOfflineMode: async () => {},
+  enterSandboxMode: async () => {},
   exitOfflineMode: () => {},
 });
 
@@ -43,6 +48,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isOfflineMode, setIsOfflineMode] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("gstlens_offline_mode") === "true";
+    }
+    return false;
+  });
+  const [isSandboxMode, setIsSandboxMode] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("gstlens_sandbox_mode") === "true";
     }
     return false;
   });
@@ -82,11 +93,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await setupOfflineUser();
   }, [setupOfflineUser]);
 
+  const enterSandboxMode = useCallback(async () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("gstlens_sandbox_mode", "true");
+      localStorage.setItem("gstlens_offline_mode", "true");
+    }
+    setIsSandboxMode(true);
+    // If no invoices exist in local DB, seed realistic sandbox demo bills
+    const existingInvoices = await getAllInvoices().catch(() => []);
+    if (existingInvoices.length === 0) {
+      await seedSandboxData().catch((err) => console.warn("Failed to seed sandbox data:", err));
+    }
+    await setupOfflineUser();
+  }, [setupOfflineUser]);
+
   const exitOfflineMode = useCallback(() => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("gstlens_offline_mode");
+      localStorage.removeItem("gstlens_sandbox_mode");
     }
     setIsOfflineMode(false);
+    setIsSandboxMode(false);
     // If user was offline placeholder, clear to trigger online auth check
     if (user?.isOffline) {
       setUser(null);
@@ -118,7 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Firebase auth state listener with offline resilience
   useEffect(() => {
     // If user is currently offline or has explicit offline mode flag set
-    if (!navigator.onLine || isOfflineMode) {
+    if (!navigator.onLine || isOfflineMode || isSandboxMode) {
       setupOfflineUser();
       return;
     }
@@ -136,7 +163,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!firebaseUser) {
         // If offline mode is enabled in localStorage or offline, fallback
-        if (localStorage.getItem("gstlens_offline_mode") === "true" || !navigator.onLine) {
+        if (
+          localStorage.getItem("gstlens_offline_mode") === "true" ||
+          localStorage.getItem("gstlens_sandbox_mode") === "true" ||
+          !navigator.onLine
+        ) {
           await setupOfflineUser();
         } else {
           setUser(null);
@@ -207,7 +238,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (liveProfileUnsub) liveProfileUnsub();
       unsub();
     };
-  }, [isOfflineMode, setupOfflineUser]);
+  }, [isOfflineMode, isSandboxMode, setupOfflineUser]);
 
   // Handle custom credit update event
   const handleCreditUpdate = useCallback(async () => {
@@ -244,7 +275,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         isOnline,
         isOfflineMode,
+        isSandboxMode,
         enterOfflineMode,
+        enterSandboxMode,
         exitOfflineMode,
       }}
     >

@@ -2,7 +2,6 @@ const APP_KEY = "gstlens_settings";
 const LOCAL_KEY = "gstlens_local_settings";
 
 export type AppSettings = {
-  autoSave: boolean;
   notificationsEnabled: boolean;
   cloud_sync_enabled: boolean;
 };
@@ -14,7 +13,6 @@ export type LocalOnlySettings = {
 export type CombinedSettings = AppSettings & LocalOnlySettings;
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
-  autoSave: false,
   notificationsEnabled: true,
   cloud_sync_enabled: false,
 };

@@ -37,6 +37,7 @@ import {
 } from "@/lib/gstBillingEngine";
 import { fetchGSTInfo, GstInfo, saveGSTINBackend } from "@/lib/api";
 import toast from "react-hot-toast";
+import { isSandboxModeActive } from "@/lib/sandboxData";
 
 export const ONBOARDING_COMPLETED_KEY = "gstlens_onboarding_completed";
 export const OPEN_ONBOARDING_EVENT = "gstlens_open_onboarding";
@@ -116,7 +117,7 @@ export default function BusinessOnboardingModal() {
     if (typeof window === "undefined") return;
 
     const completed = localStorage.getItem(ONBOARDING_COMPLETED_KEY);
-    if (!completed) {
+    if (!completed && !isSandboxModeActive()) {
       getBusinessProfile()
         .then((prof) => {
           // If profile has no GSTIN or is empty, launch onboarding
@@ -417,15 +418,15 @@ export default function BusinessOnboardingModal() {
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 md:p-6 overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-3xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
+      <div className="bg-white dark:bg-[#1a1a1c] rounded-2xl w-full max-w-3xl border border-stone-200/80 dark:border-stone-800 shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
         {/* Header with Step Indicators */}
-        <div className="p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 flex items-center justify-between">
+        <div className="p-5 border-b border-stone-200/80 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/60 flex items-center justify-between">
           <div>
-            <h2 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <h2 className="text-lg md:text-xl font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-[#047857] dark:text-emerald-400" />
               GSTLens Business Setup
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
               Step {currentStep} of {totalSteps}:{" "}
               {currentStep === 1 && "Your Business & GST Particulars"}
               {currentStep === 2 && "Primary Buyer / Customer"}
@@ -438,13 +439,13 @@ export default function BusinessOnboardingModal() {
           <div className="flex items-center gap-2">
             <button
               onClick={handleSkip}
-              className="text-xs font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition"
+              className="text-xs font-semibold text-slate-500 hover:text-slate-700 dark:text-stone-400 dark:hover:text-slate-200 px-3 py-1.5 rounded-lg hover:bg-stone-200 dark:hover:bg-stone-800 transition"
             >
               Skip Setup
             </button>
             <button
               onClick={() => setIsOpen(false)}
-              className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg text-slate-400 transition"
+              className="p-1.5 hover:bg-stone-200 dark:hover:bg-stone-800 rounded-lg text-stone-400 transition"
             >
               <X className="w-4 h-4" />
             </button>
@@ -452,9 +453,9 @@ export default function BusinessOnboardingModal() {
         </div>
 
         {/* Step Progress Tracker */}
-        <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5">
+        <div className="w-full bg-stone-100 dark:bg-stone-800 h-1.5">
           <div
-            className="bg-blue-600 h-1.5 transition-all duration-300"
+            className="bg-[#047857] h-1.5 transition-all duration-300"
             style={{ width: `${(currentStep / totalSteps) * 100}%` }}
           />
         </div>
@@ -464,12 +465,12 @@ export default function BusinessOnboardingModal() {
           {/* STEP 1: BUSINESS PROFILE */}
           {currentStep === 1 && (
             <div className="space-y-4">
-              <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-200 dark:border-blue-900/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+              <div className="p-4 bg-stone-50 dark:bg-stone-900/60 rounded-xl border border-stone-200 dark:border-stone-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
                 <div className="space-y-1">
-                  <p className="text-xs font-bold text-blue-900 dark:text-blue-200">
+                  <p className="text-xs font-bold text-stone-900 dark:text-stone-100">
                     Enter your GSTIN for Instant Auto-Fill
                   </p>
-                  <p className="text-[11px] text-blue-700 dark:text-blue-300">
+                  <p className="text-[11px] text-stone-600 dark:text-stone-400">
                     We query the GST Portal directly to populate your legal name, trade name, registered address, and PAN automatically.
                   </p>
                 </div>
@@ -486,13 +487,13 @@ export default function BusinessOnboardingModal() {
                         handleBusinessGstLookup(val);
                       }
                     }}
-                    className="px-3 py-2 bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700 rounded-lg font-mono uppercase font-bold text-slate-900 dark:text-white flex-1 md:w-48 text-xs"
+                    className="px-3 py-2 bg-white dark:bg-[#1a1a1c] border border-stone-200 dark:border-stone-700 rounded-lg font-mono uppercase font-bold text-stone-900 dark:text-stone-100 flex-1 md:w-48 text-xs"
                   />
                   <button
                     type="button"
                     onClick={() => handleBusinessGstLookup()}
                     disabled={isFetchingGst || gstin.length < 15}
-                    className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs disabled:opacity-40 transition shrink-0 cursor-pointer"
+                    className="px-3.5 py-2 bg-[#047857] hover:bg-[#065f46] text-white font-bold rounded-lg text-xs disabled:opacity-40 transition shrink-0 cursor-pointer"
                   >
                     {isFetchingGst ? "Fetching..." : "Auto-Fill"}
                   </button>
@@ -510,7 +511,7 @@ export default function BusinessOnboardingModal() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="font-semibold text-stone-700 dark:text-stone-300 block mb-1">
                     Legal Business Name *
                   </label>
                   <input
@@ -519,11 +520,11 @@ export default function BusinessOnboardingModal() {
                     placeholder="e.g. Ramesh Enterprises Pvt Ltd"
                     value={legalName}
                     onChange={(e) => setLegalName(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="font-semibold text-stone-700 dark:text-stone-300 block mb-1">
                     Trade / Shop Name
                   </label>
                   <input
@@ -531,14 +532,14 @@ export default function BusinessOnboardingModal() {
                     placeholder="e.g. Ramesh Supermarket"
                     value={tradeName}
                     onChange={(e) => setTradeName(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="font-semibold text-stone-700 dark:text-stone-300 block mb-1">
                     PAN
                   </label>
                   <input
@@ -547,11 +548,11 @@ export default function BusinessOnboardingModal() {
                     placeholder="AAAAA0000A"
                     value={pan}
                     onChange={(e) => setPan(e.target.value.toUpperCase())}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono uppercase"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl font-mono uppercase"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="font-semibold text-stone-700 dark:text-stone-300 block mb-1">
                     Phone / Mobile Number *
                   </label>
                   <input
@@ -559,11 +560,11 @@ export default function BusinessOnboardingModal() {
                     placeholder="+91 98765 43210"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="font-semibold text-stone-700 dark:text-stone-300 block mb-1">
                     Email Address
                   </label>
                   <input
@@ -571,14 +572,14 @@ export default function BusinessOnboardingModal() {
                     placeholder="billing@mybusiness.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-2">
-                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="font-semibold text-stone-700 dark:text-stone-300 block mb-1">
                     Full Registered Address
                   </label>
                   <input
@@ -586,17 +587,17 @@ export default function BusinessOnboardingModal() {
                     placeholder="Shop/Office number, Street, Area"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="font-semibold text-stone-700 dark:text-stone-300 block mb-1">
                     State
                   </label>
                   <select
                     value={state}
                     onChange={(e) => setState(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl"
                   >
                     {INDIAN_STATES.map((s) => (
                       <option key={s.code} value={s.name}>
@@ -608,14 +609,14 @@ export default function BusinessOnboardingModal() {
               </div>
 
               {/* Bank & UPI QR Setup */}
-              <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-3">
-                <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                  <QrCode className="w-4 h-4 text-blue-600" />
+              <div className="pt-2 border-t border-stone-200/80 dark:border-stone-800 space-y-3">
+                <h4 className="font-bold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
+                  <QrCode className="w-4 h-4 text-[#047857]" />
                   Bank & UPI Details (For Invoice Payment QR)
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                   <div>
-                    <label className="font-semibold text-slate-600 dark:text-slate-400 block mb-1">
+                    <label className="font-semibold text-slate-600 dark:text-stone-400 block mb-1">
                       Bank Name
                     </label>
                     <input
@@ -623,11 +624,11 @@ export default function BusinessOnboardingModal() {
                       placeholder="HDFC Bank"
                       value={bankName}
                       onChange={(e) => setBankName(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+                      className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl"
                     />
                   </div>
                   <div>
-                    <label className="font-semibold text-slate-600 dark:text-slate-400 block mb-1">
+                    <label className="font-semibold text-slate-600 dark:text-stone-400 block mb-1">
                       Account Number
                     </label>
                     <input
@@ -635,11 +636,11 @@ export default function BusinessOnboardingModal() {
                       placeholder="50200012345678"
                       value={accountNumber}
                       onChange={(e) => setAccountNumber(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono"
+                      className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl font-mono"
                     />
                   </div>
                   <div>
-                    <label className="font-semibold text-slate-600 dark:text-slate-400 block mb-1">
+                    <label className="font-semibold text-slate-600 dark:text-stone-400 block mb-1">
                       IFSC Code
                     </label>
                     <input
@@ -647,11 +648,11 @@ export default function BusinessOnboardingModal() {
                       placeholder="HDFC0001234"
                       value={ifsc}
                       onChange={(e) => setIfsc(e.target.value.toUpperCase())}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono uppercase"
+                      className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl font-mono uppercase"
                     />
                   </div>
                   <div>
-                    <label className="font-semibold text-slate-600 dark:text-slate-400 block mb-1">
+                    <label className="font-semibold text-slate-600 dark:text-stone-400 block mb-1">
                       UPI ID (VPA)
                     </label>
                     <input
@@ -659,7 +660,7 @@ export default function BusinessOnboardingModal() {
                       placeholder="business@okhdfcbank"
                       value={upiId}
                       onChange={(e) => setUpiId(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono"
+                      className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl font-mono"
                     />
                   </div>
                 </div>
@@ -670,24 +671,24 @@ export default function BusinessOnboardingModal() {
           {/* STEP 2: FIRST BUYER / CUSTOMER */}
           {currentStep === 2 && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between pb-2 border-b border-stone-100 dark:border-stone-800">
                 <div>
-                  <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Users className="w-4 h-4 text-blue-600" />
+                  <h3 className="font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                    <Users className="w-4 h-4 text-[#047857]" />
                     Add Your First Customer / Buyer
                   </h3>
                   <p className="text-slate-500 text-[11px] mt-0.5">
                     Save a regular wholesale buyer, or select Walk-in Cash for retail counter sales.
                   </p>
                 </div>
-                <label className="flex items-center gap-2 cursor-pointer bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl">
+                <label className="flex items-center gap-2 cursor-pointer bg-stone-100 dark:bg-stone-800 px-3 py-1.5 rounded-xl">
                   <input
                     type="checkbox"
                     checked={isBuyerCashWalkin}
                     onChange={(e) => setIsBuyerCashWalkin(e.target.checked)}
-                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-slate-300 text-[#047857] focus:ring-[#047857]"
                   />
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">
+                  <span className="font-semibold text-stone-700 dark:text-stone-300">
                     Use Walk-in Cash Customer
                   </span>
                 </label>
@@ -695,16 +696,16 @@ export default function BusinessOnboardingModal() {
 
               {!isBuyerCashWalkin ? (
                 <>
-                  <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+                  <div className="p-3 bg-stone-50 dark:bg-stone-900/60 rounded-xl border border-stone-200 dark:border-stone-800 space-y-2">
                     <div className="flex items-center justify-between">
-                      <label className="font-semibold text-slate-700 dark:text-slate-300">
+                      <label className="font-semibold text-stone-700 dark:text-stone-300">
                         Buyer GSTIN (Auto-Fill)
                       </label>
                       <button
                         type="button"
                         onClick={() => handleBuyerGstLookup()}
                         disabled={isFetchingBuyerGst || buyerGstin.length < 15}
-                        className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-40 cursor-pointer"
+                        className="text-[11px] font-bold text-[#047857] dark:text-emerald-400 hover:underline disabled:opacity-40 cursor-pointer"
                       >
                         {isFetchingBuyerGst ? "Fetching..." : "Auto-Fill from GST Portal"}
                       </button>
@@ -721,13 +722,13 @@ export default function BusinessOnboardingModal() {
                           handleBuyerGstLookup(val);
                         }
                       }}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-mono uppercase font-bold text-slate-900 dark:text-white"
+                      className="w-full px-3 py-2 bg-white dark:bg-[#1a1a1c] border border-stone-200 dark:border-stone-800 rounded-xl font-mono uppercase font-bold text-stone-900 dark:text-stone-100"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                      <label className="font-semibold text-stone-700 dark:text-stone-300 block mb-1">
                         Customer / Firm Name *
                       </label>
                       <input
@@ -735,11 +736,11 @@ export default function BusinessOnboardingModal() {
                         placeholder="e.g. Acme Trading Corp"
                         value={buyerName}
                         onChange={(e) => setBuyerName(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+                        className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl"
                       />
                     </div>
                     <div>
-                      <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                      <label className="font-semibold text-stone-700 dark:text-stone-300 block mb-1">
                         Phone Number
                       </label>
                       <input
@@ -747,14 +748,14 @@ export default function BusinessOnboardingModal() {
                         placeholder="+91 98000 00000"
                         value={buyerPhone}
                         onChange={(e) => setBuyerPhone(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+                        className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="md:col-span-2">
-                      <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                      <label className="font-semibold text-stone-700 dark:text-stone-300 block mb-1">
                         Address
                       </label>
                       <input
@@ -762,17 +763,17 @@ export default function BusinessOnboardingModal() {
                         placeholder="Billing Street Address"
                         value={buyerAddress}
                         onChange={(e) => setBuyerAddress(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+                        className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl"
                       />
                     </div>
                     <div>
-                      <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                      <label className="font-semibold text-stone-700 dark:text-stone-300 block mb-1">
                         State
                       </label>
                       <select
                         value={buyerState}
                         onChange={(e) => setBuyerState(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+                        className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl"
                       >
                         {INDIAN_STATES.map((s) => (
                           <option key={s.code} value={s.name}>
@@ -801,8 +802,8 @@ export default function BusinessOnboardingModal() {
           {currentStep === 3 && (
             <div className="space-y-4">
               <div>
-                <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Truck className="w-4 h-4 text-blue-600" />
+                <h3 className="font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-[#047857]" />
                   Add Your Primary Supplier / Vendor
                 </h3>
                 <p className="text-slate-500 text-[11px] mt-0.5">
@@ -810,16 +811,16 @@ export default function BusinessOnboardingModal() {
                 </p>
               </div>
 
-              <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+              <div className="p-3 bg-stone-50 dark:bg-stone-900/60 rounded-xl border border-stone-200 dark:border-stone-800 space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="font-semibold text-slate-700 dark:text-slate-300">
+                  <label className="font-semibold text-stone-700 dark:text-stone-300">
                     Vendor GSTIN (Auto-Fill)
                   </label>
                   <button
                     type="button"
                     onClick={() => handleVendorGstLookup()}
                     disabled={isFetchingVendorGst || vendorGstin.length < 15}
-                    className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-40 cursor-pointer"
+                    className="text-[11px] font-bold text-[#047857] dark:text-emerald-400 hover:underline disabled:opacity-40 cursor-pointer"
                   >
                     {isFetchingVendorGst ? "Fetching..." : "Auto-Fill from GST Portal"}
                   </button>
@@ -836,13 +837,13 @@ export default function BusinessOnboardingModal() {
                       handleVendorGstLookup(val);
                     }
                   }}
-                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-mono uppercase font-bold text-slate-900 dark:text-white"
+                  className="w-full px-3 py-2 bg-white dark:bg-[#1a1a1c] border border-stone-200 dark:border-stone-800 rounded-xl font-mono uppercase font-bold text-stone-900 dark:text-stone-100"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="font-semibold text-stone-700 dark:text-stone-300 block mb-1">
                     Vendor / Firm Name *
                   </label>
                   <input
@@ -850,11 +851,11 @@ export default function BusinessOnboardingModal() {
                     placeholder="e.g. Modern Wholesale Distributors"
                     value={vendorName}
                     onChange={(e) => setVendorName(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="font-semibold text-stone-700 dark:text-stone-300 block mb-1">
                     Contact Phone
                   </label>
                   <input
@@ -862,14 +863,14 @@ export default function BusinessOnboardingModal() {
                     placeholder="+91 98000 00000"
                     value={vendorPhone}
                     onChange={(e) => setVendorPhone(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-2">
-                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="font-semibold text-stone-700 dark:text-stone-300 block mb-1">
                     Vendor Address
                   </label>
                   <input
@@ -877,17 +878,17 @@ export default function BusinessOnboardingModal() {
                     placeholder="Street, City"
                     value={vendorAddress}
                     onChange={(e) => setVendorAddress(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="font-semibold text-stone-700 dark:text-stone-300 block mb-1">
                     State
                   </label>
                   <select
                     value={vendorState}
                     onChange={(e) => setVendorState(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl"
                   >
                     {INDIAN_STATES.map((s) => (
                       <option key={s.code} value={s.name}>
@@ -905,8 +906,8 @@ export default function BusinessOnboardingModal() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Package className="w-4 h-4 text-blue-600" />
+                  <h3 className="font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                    <Package className="w-4 h-4 text-[#047857]" />
                     Initial Inventory & Opening Stock
                   </h3>
                   <p className="text-slate-500 text-[11px] mt-0.5">
@@ -916,7 +917,7 @@ export default function BusinessOnboardingModal() {
                 <button
                   type="button"
                   onClick={addStockRow}
-                  className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 font-bold rounded-lg hover:bg-blue-100 flex items-center gap-1"
+                  className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/40 text-[#047857] dark:text-blue-300 font-bold rounded-lg hover:bg-blue-100 flex items-center gap-1"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Add Row
@@ -927,10 +928,10 @@ export default function BusinessOnboardingModal() {
                 {stockItems.map((item, index) => (
                   <div
                     key={index}
-                    className="p-3.5 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end"
+                    className="p-3.5 bg-stone-50 dark:bg-stone-900/60 rounded-xl border border-stone-200 dark:border-stone-800 grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end"
                   >
                     <div className="sm:col-span-4">
-                      <label className="font-semibold text-slate-600 dark:text-slate-400 block mb-1 text-[11px]">
+                      <label className="font-semibold text-slate-600 dark:text-stone-400 block mb-1 text-[11px]">
                         Item / Product Name *
                       </label>
                       <input
@@ -938,12 +939,12 @@ export default function BusinessOnboardingModal() {
                         placeholder="e.g. Basmati Rice 5kg or Consulting Service"
                         value={item.name}
                         onChange={(e) => handleStockChange(index, "name", e.target.value)}
-                        className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1a1c] border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
                       />
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="font-semibold text-slate-600 dark:text-slate-400 block mb-1 text-[11px]">
+                      <label className="font-semibold text-slate-600 dark:text-stone-400 block mb-1 text-[11px]">
                         HSN / SAC
                       </label>
                       <input
@@ -951,12 +952,12 @@ export default function BusinessOnboardingModal() {
                         placeholder="1006"
                         value={item.hsn}
                         onChange={(e) => handleStockChange(index, "hsn", e.target.value)}
-                        className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-xs"
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1a1c] border border-stone-200 dark:border-stone-800 rounded-lg font-mono text-xs"
                       />
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="font-semibold text-slate-600 dark:text-slate-400 block mb-1 text-[11px]">
+                      <label className="font-semibold text-slate-600 dark:text-stone-400 block mb-1 text-[11px]">
                         Selling Price (₹)
                       </label>
                       <input
@@ -965,18 +966,18 @@ export default function BusinessOnboardingModal() {
                         step="0.01"
                         value={item.sellingPrice || ""}
                         onChange={(e) => handleStockChange(index, "sellingPrice", parseFloat(e.target.value) || 0)}
-                        className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-xs"
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1a1c] border border-stone-200 dark:border-stone-800 rounded-lg font-mono text-xs"
                       />
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="font-semibold text-slate-600 dark:text-slate-400 block mb-1 text-[11px]">
+                      <label className="font-semibold text-slate-600 dark:text-stone-400 block mb-1 text-[11px]">
                         Tax Slab
                       </label>
                       <select
                         value={item.taxPercent}
                         onChange={(e) => handleStockChange(index, "taxPercent", parseFloat(e.target.value))}
-                        className="w-full px-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                        className="w-full px-2 py-1.5 bg-white dark:bg-[#1a1a1c] border border-stone-200 dark:border-stone-800 rounded-lg text-xs"
                       >
                         {GST_RATES.map((r) => (
                           <option key={r} value={r}>
@@ -987,7 +988,7 @@ export default function BusinessOnboardingModal() {
                     </div>
 
                     <div className="sm:col-span-1">
-                      <label className="font-semibold text-slate-600 dark:text-slate-400 block mb-1 text-[11px]">
+                      <label className="font-semibold text-slate-600 dark:text-stone-400 block mb-1 text-[11px]">
                         Stock Qty
                       </label>
                       <input
@@ -995,7 +996,7 @@ export default function BusinessOnboardingModal() {
                         min="0"
                         value={item.stock}
                         onChange={(e) => handleStockChange(index, "stock", parseInt(e.target.value) || 0)}
-                        className="w-full px-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-xs"
+                        className="w-full px-2 py-1.5 bg-white dark:bg-[#1a1a1c] border border-stone-200 dark:border-stone-800 rounded-lg font-mono text-xs"
                       />
                     </div>
 
@@ -1004,7 +1005,7 @@ export default function BusinessOnboardingModal() {
                         type="button"
                         onClick={() => removeStockRow(index)}
                         disabled={stockItems.length <= 1}
-                        className="p-2 text-slate-400 hover:text-rose-600 disabled:opacity-20 transition"
+                        className="p-2 text-stone-400 hover:text-rose-600 disabled:opacity-20 transition"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -1019,8 +1020,8 @@ export default function BusinessOnboardingModal() {
           {currentStep === 5 && (
             <div className="space-y-4">
               <div>
-                <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Settings className="w-4 h-4 text-blue-600" />
+                <h3 className="font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                  <Settings className="w-4 h-4 text-[#047857]" />
                   Billing & Invoicing Preferences
                 </h3>
                 <p className="text-slate-500 text-[11px] mt-0.5">
@@ -1030,7 +1031,7 @@ export default function BusinessOnboardingModal() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="font-semibold text-stone-700 dark:text-stone-300 block mb-1">
                     Invoice Series Prefix
                   </label>
                   <input
@@ -1038,14 +1039,14 @@ export default function BusinessOnboardingModal() {
                     placeholder="INV/2024-25/"
                     value={invoicePrefix}
                     onChange={(e) => setInvoicePrefix(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono text-xs font-bold"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl font-mono text-xs font-bold"
                   />
-                  <p className="text-[10px] text-slate-400 mt-1">
+                  <p className="text-[10px] text-stone-400 mt-1">
                     Preview: {invoicePrefix}000{startingNumber}
                   </p>
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label className="font-semibold text-stone-700 dark:text-stone-300 block mb-1">
                     Starting Number
                   </label>
                   <input
@@ -1053,13 +1054,13 @@ export default function BusinessOnboardingModal() {
                     min="1"
                     value={startingNumber}
                     onChange={(e) => setStartingNumber(parseInt(e.target.value) || 1)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono text-xs"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl font-mono text-xs"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-2">
+                <label className="font-semibold text-stone-700 dark:text-stone-300 block mb-2">
                   Default Invoice Template
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -1074,12 +1075,12 @@ export default function BusinessOnboardingModal() {
                       onClick={() => setDefaultTemplate(tpl.id as any)}
                       className={`p-3 rounded-xl border cursor-pointer transition ${
                         defaultTemplate === tpl.id
-                          ? "border-blue-600 bg-blue-50/50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-200 font-bold"
-                          : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
+                          ? "border-blue-600 bg-blue-50/50 dark:bg-blue-950/40 text-stone-900 dark:text-stone-100 font-bold"
+                          : "border-stone-200/80 dark:border-stone-800 hover:border-slate-300 dark:hover:border-slate-700"
                       }`}
                     >
                       <p className="text-xs font-bold">{tpl.label}</p>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 font-normal">
+                      <p className="text-[10px] text-stone-500 dark:text-stone-400 mt-0.5 font-normal">
                         {tpl.desc}
                       </p>
                     </div>
@@ -1091,7 +1092,7 @@ export default function BusinessOnboardingModal() {
         </div>
 
         {/* Footer Navigation */}
-        <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 flex items-center justify-between">
+        <div className="p-4 border-t border-stone-200/80 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/60 flex items-center justify-between">
           <div>
             {currentStep > 1 && (
               <button
@@ -1116,7 +1117,7 @@ export default function BusinessOnboardingModal() {
                   }
                   setCurrentStep((prev) => prev + 1);
                 }}
-                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition flex items-center gap-1.5 text-xs shadow-sm cursor-pointer"
+                className="px-5 py-2.5 bg-[#047857] hover:bg-[#065f46] text-white font-bold rounded-xl transition flex items-center gap-1.5 text-xs shadow-sm cursor-pointer"
               >
                 Next Step ({currentStep + 1}/{totalSteps})
                 <ArrowRight className="w-3.5 h-3.5" />

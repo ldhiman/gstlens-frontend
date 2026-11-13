@@ -71,8 +71,8 @@ export default function ReportsPage() {
     loadData();
   }, []);
 
-  // Only outward sales (exclude purchases that may be flagged as inward)
-  const salesInvoices = invoices.filter((inv) => !(inv.data?.is_inward === true));
+  // Only outward sales (exclude drafts and purchases that may be flagged as inward)
+  const salesInvoices = invoices.filter((inv) => inv.status !== "draft" && !(inv.data?.is_inward === true));
 
   // Profit & Loss Aggregations
   const totalSalesRevenue = salesInvoices.reduce((acc, inv) => {
@@ -91,7 +91,8 @@ export default function ReportsPage() {
     return acc + extractInvoiceTotal(data);
   }, 0);
 
-  const totalPurchasesCost = purchases.reduce(
+  const confirmedPurchases = purchases.filter((p) => p.status !== "draft");
+  const totalPurchasesCost = confirmedPurchases.reduce(
     (acc, p) => acc + Number(p.taxableAmount || (p.total ? p.total - (p.cgst + p.sgst + p.igst) : 0) || 0),
     0
   );
@@ -118,21 +119,21 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 pb-20">
+    <div className="min-h-screen bg-[#fafaf9] dark:bg-[#141415] text-slate-900 dark:text-slate-100 pb-20">
       <Header />
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-6">
         {/* Title */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <span className="p-2 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 rounded-2xl border border-indigo-200/60 dark:border-indigo-800/60 shadow-xs">
+            <span className="p-2 bg-emerald-50 dark:bg-emerald-950/40 text-[#047857] dark:text-emerald-400 rounded-xl border border-emerald-200 dark:border-emerald-800/50 shadow-xs">
               <BarChart3 className="w-6 h-6" />
             </span>
             <div>
-              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+              <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">
                 Financial & Audit Reports
               </h1>
-              <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400">
+              <p className="text-xs md:text-sm text-stone-500 dark:text-stone-400">
                 Statutory sales register, purchase register, P&L statement, and inventory valuation ledger.
               </p>
             </div>
@@ -140,13 +141,13 @@ export default function ReportsPage() {
         </div>
 
         {/* Report Segmented Tabs */}
-        <div className="flex flex-wrap bg-white dark:bg-slate-800/90 p-1.5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs w-fit text-xs font-semibold gap-1">
+        <div className="flex flex-wrap bg-stone-100 dark:bg-stone-800/60 p-1 rounded-xl border border-stone-200/60 dark:border-stone-800 w-fit text-xs font-medium gap-1">
           <button
             onClick={() => setActiveReport("pl")}
             className={`px-4 py-2 rounded-2xl transition-all ${
               activeReport === "pl"
-                ? "bg-indigo-600 text-white shadow-xs font-bold"
-                : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                ? "bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 shadow-xs border border-stone-200 dark:border-stone-700/60 font-medium"
+                : "text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white"
             }`}
           >
             Profit & Loss Summary
@@ -155,8 +156,8 @@ export default function ReportsPage() {
             onClick={() => setActiveReport("sales")}
             className={`px-4 py-2 rounded-2xl transition-all ${
               activeReport === "sales"
-                ? "bg-indigo-600 text-white shadow-xs font-bold"
-                : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                ? "bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 shadow-xs border border-stone-200 dark:border-stone-700/60 font-medium"
+                : "text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white"
             }`}
           >
             Sales Register
@@ -165,8 +166,8 @@ export default function ReportsPage() {
             onClick={() => setActiveReport("purchases")}
             className={`px-4 py-2 rounded-2xl transition-all ${
               activeReport === "purchases"
-                ? "bg-indigo-600 text-white shadow-xs font-bold"
-                : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                ? "bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 shadow-xs border border-stone-200 dark:border-stone-700/60 font-medium"
+                : "text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white"
             }`}
           >
             Purchase Register
@@ -175,8 +176,8 @@ export default function ReportsPage() {
             onClick={() => setActiveReport("stock")}
             className={`px-4 py-2 rounded-2xl transition-all ${
               activeReport === "stock"
-                ? "bg-indigo-600 text-white shadow-xs font-bold"
-                : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                ? "bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 shadow-xs border border-stone-200 dark:border-stone-700/60 font-medium"
+                : "text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white"
             }`}
           >
             Stock Valuation
@@ -189,85 +190,85 @@ export default function ReportsPage() {
         {activeReport === "pl" && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-              <div className="bg-white dark:bg-slate-800/90 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+              <div className="bg-white dark:bg-[#1a1a1c] p-5 rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-xs">
+                <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider block">
                   Sales Revenue (Taxable)
                 </span>
-                <p className="text-2xl font-black font-mono tabular-nums text-indigo-600 dark:text-indigo-400 mt-2">
+                <p className="text-2xl font-semibold font-mono tabular-nums text-[#047857] dark:text-emerald-400 mt-2">
                   {formatINR(totalSalesRevenue)}
                 </p>
-                <p className="text-[10px] text-slate-400 mt-1">Excludes GST output tax</p>
+                <p className="text-[10px] text-stone-400 mt-1">Excludes GST output tax</p>
               </div>
 
-              <div className="bg-white dark:bg-slate-800/90 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+              <div className="bg-white dark:bg-[#1a1a1c] p-5 rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-xs">
+                <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider block">
                   Cost of Goods (Purchases)
                 </span>
-                <p className="text-2xl font-black font-mono tabular-nums text-slate-900 dark:text-white mt-2">
+                <p className="text-2xl font-semibold font-mono tabular-nums text-stone-900 dark:text-stone-100 mt-2">
                   {formatINR(totalPurchasesCost)}
                 </p>
-                <p className="text-[10px] text-slate-400 mt-1">Direct vendor stock procurement</p>
+                <p className="text-[10px] text-stone-400 mt-1">Direct vendor stock procurement</p>
               </div>
 
-              <div className="bg-white dark:bg-slate-800/90 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+              <div className="bg-white dark:bg-[#1a1a1c] p-5 rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-xs">
+                <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider block">
                   Operating Overheads
                 </span>
-                <p className="text-2xl font-black font-mono tabular-nums text-rose-600 dark:text-rose-400 mt-2">
+                <p className="text-2xl font-semibold font-mono tabular-nums text-rose-600 dark:text-rose-400 mt-2">
                   {formatINR(totalOperatingExpenses)}
                 </p>
-                <p className="text-[10px] text-slate-400 mt-1">Rent, utilities, tools, salaries</p>
+                <p className="text-[10px] text-stone-400 mt-1">Rent, utilities, tools, salaries</p>
               </div>
 
-              <div className="bg-white dark:bg-slate-800/90 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+              <div className="bg-white dark:bg-[#1a1a1c] p-5 rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-xs">
+                <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider block">
                   Estimated Net Profit
                 </span>
                 <p
-                  className={`text-2xl font-black font-mono tabular-nums mt-2 ${
+                  className={`text-2xl font-semibold font-mono tabular-nums mt-2 ${
                     netProfit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600"
                   }`}
                 >
                   {formatINR(netProfit)}
                 </p>
-                <p className="text-[10px] text-slate-400 mt-1">After direct & indirect overheads</p>
+                <p className="text-[10px] text-stone-400 mt-1">After direct & indirect overheads</p>
               </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-800/90 p-6 md:p-8 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
+            <div className="bg-white dark:bg-[#1a1a1c] p-6 rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-xs space-y-4">
               <div>
-                <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
+                <h3 className="font-semibold text-base text-stone-900 dark:text-stone-100">
                   Statement of Profit & Loss (Income Tax Section 44AD / Schedule BP Preview)
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
                   Financial figures computed using double-entry matching for the current active period.
                 </p>
               </div>
 
-              <div className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+              <div className="divide-y divide-stone-100 dark:divide-stone-800 text-xs">
                 <div className="py-3 flex justify-between font-semibold">
-                  <span className="text-slate-700 dark:text-slate-300">Gross Turnover / Outward Sales Receipts:</span>
-                  <span className="font-mono font-bold tabular-nums text-slate-900 dark:text-white">
+                  <span className="text-stone-700 dark:text-stone-300">Gross Turnover / Outward Sales Receipts:</span>
+                  <span className="font-mono font-bold tabular-nums text-stone-900 dark:text-stone-100">
                     {formatINR(totalSalesRevenue)}
                   </span>
                 </div>
-                <div className="py-3 flex justify-between text-slate-600 dark:text-slate-400">
+                <div className="py-3 flex justify-between text-stone-600 dark:text-stone-400">
                   <span>Less: Direct Inward Purchase Costs (COGS):</span>
                   <span className="font-mono tabular-nums text-rose-600 dark:text-rose-400 font-semibold">
                     ({formatINR(totalPurchasesCost)})
                   </span>
                 </div>
-                <div className="py-3 flex justify-between font-bold text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-900/60 px-3 rounded-2xl">
+                <div className="py-3 flex justify-between font-bold text-stone-900 dark:text-stone-100 bg-[#fafaf9] dark:bg-[#141415]/60 px-3 rounded-2xl">
                   <span>Gross Operating Profit:</span>
                   <span className="font-mono font-bold tabular-nums">{formatINR(grossProfit)}</span>
                 </div>
-                <div className="py-3 flex justify-between text-slate-600 dark:text-slate-400">
+                <div className="py-3 flex justify-between text-stone-600 dark:text-stone-400">
                   <span>Less: Business Operating Expenses (Rent, Utilities, Software, Salaries):</span>
                   <span className="font-mono tabular-nums text-rose-600 dark:text-rose-400 font-semibold">
                     ({formatINR(totalOperatingExpenses)})
                   </span>
                 </div>
-                <div className="py-3.5 flex justify-between font-black text-sm text-indigo-700 dark:text-indigo-300 bg-indigo-50/70 dark:bg-indigo-950/40 px-3.5 rounded-2xl border border-indigo-200/60 dark:border-indigo-800/60">
+                <div className="py-3.5 flex justify-between font-black text-sm text-stone-900 dark:text-stone-100 bg-stone-50 dark:bg-stone-900/60 px-3.5 rounded-xl border border-stone-200 dark:border-stone-800">
                   <span>Estimated Net Business Profit:</span>
                   <span className="font-mono tabular-nums text-base">{formatINR(netProfit)}</span>
                 </div>
@@ -284,10 +285,10 @@ export default function ReportsPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <span className="text-xs font-semibold text-slate-500">
-                  Total Sales: <strong className="text-slate-900 dark:text-white">{salesInvoices.length}</strong>
+                  Total Sales: <strong className="text-stone-900 dark:text-stone-100">{salesInvoices.length}</strong>
                 </span>
                 <span className="text-xs font-semibold text-slate-500">
-                  Total Turnover: <strong className="text-indigo-600 dark:text-indigo-400 font-mono">{formatINR(totalSalesGross)}</strong>
+                  Total Turnover: <strong className="text-[#047857] dark:text-emerald-400 font-mono">{formatINR(totalSalesGross)}</strong>
                 </span>
               </div>
 
@@ -330,17 +331,17 @@ export default function ReportsPage() {
               </button>
             </div>
 
-            <div className="bg-white dark:bg-slate-800/90 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
+            <div className="bg-white dark:bg-[#1a1a1c] rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-xs overflow-hidden">
               {salesInvoices.length === 0 ? (
                 <div className="py-16 text-center space-y-2">
-                  <FileText className="w-10 h-10 text-slate-400 mx-auto" />
-                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">No sales recorded yet</p>
-                  <p className="text-[11px] text-slate-400">Generate tax invoices to populate the sales register.</p>
+                  <FileText className="w-10 h-10 text-stone-400 mx-auto" />
+                  <p className="text-xs font-bold text-stone-700 dark:text-stone-300">No sales recorded yet</p>
+                  <p className="text-[11px] text-stone-400">Generate tax invoices to populate the sales register.</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
-                    <thead className="bg-slate-50 dark:bg-slate-900/60 text-slate-500 font-bold border-b border-slate-200/80 dark:border-slate-800 uppercase tracking-wider text-[10px]">
+                    <thead className="bg-[#fafaf9] dark:bg-[#141415]/60 text-slate-500 font-bold border-b border-stone-200/80 dark:border-stone-800 uppercase tracking-wider text-[10px]">
                       <tr>
                         <th className="py-3.5 px-4">Invoice No</th>
                         <th className="py-3.5 px-4">Date</th>
@@ -350,7 +351,7 @@ export default function ReportsPage() {
                         <th className="py-3.5 px-4">Total</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-mono">
+                    <tbody className="divide-y divide-stone-100 dark:divide-stone-800/80 font-mono">
                       {salesInvoices.map((inv) => {
                         const d = inv.data || inv || {};
                         const grandTotal = extractInvoiceTotal(d);
@@ -369,18 +370,18 @@ export default function ReportsPage() {
                         return (
                           <tr
                             key={inv.id}
-                            className="hover:bg-slate-50/70 dark:hover:bg-slate-700/20 transition-colors"
+                            className="hover:bg-stone-50/60 dark:hover:bg-stone-800/40 transition-colors"
                           >
-                            <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white tabular-nums">
+                            <td className="py-3.5 px-4 font-bold text-stone-900 dark:text-stone-100 tabular-nums">
                               {d.invoice_number || d.invoiceNumber || inv.id}
                             </td>
                             <td className="py-3.5 px-4 text-slate-500 tabular-nums">
                               {d.invoice_date || d.date || "—"}
                             </td>
-                            <td className="py-3.5 px-4 font-sans font-semibold text-slate-900 dark:text-white">
+                            <td className="py-3.5 px-4 font-sans font-semibold text-stone-900 dark:text-stone-100">
                               <div>{customerName}</div>
                               {buyerGstin && (
-                                <span className="font-mono text-[10px] text-slate-400 block">
+                                <span className="font-mono text-[10px] text-stone-400 block">
                                   {buyerGstin}
                                 </span>
                               )}
@@ -393,7 +394,7 @@ export default function ReportsPage() {
                                 ? `IGST: ${formatINR(igst)}`
                                 : `CGST: ${formatINR(cgst)} | SGST: ${formatINR(sgst)}`}
                             </td>
-                            <td className="py-3.5 px-4 font-black text-indigo-600 dark:text-indigo-400 tabular-nums">
+                            <td className="py-3.5 px-4 font-black text-[#047857] dark:text-emerald-400 tabular-nums">
                               {formatINR(grandTotal)}
                             </td>
                           </tr>
@@ -418,7 +419,7 @@ export default function ReportsPage() {
                   handleExportCSV(
                     "Purchase_Register",
                     ["Bill No", "Date", "Supplier", "GSTIN", "ITC Eligibility", "Taxable Value", "Total"],
-                    purchases.map((p) => [
+                    confirmedPurchases.map((p) => [
                       p.invoiceNumber,
                       p.date,
                       p.supplierName,
@@ -436,17 +437,17 @@ export default function ReportsPage() {
               </button>
             </div>
 
-            <div className="bg-white dark:bg-slate-800/90 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
-              {purchases.length === 0 ? (
+            <div className="bg-white dark:bg-[#1a1a1c] rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-xs overflow-hidden">
+              {confirmedPurchases.length === 0 ? (
                 <div className="py-16 text-center space-y-2">
-                  <ShoppingCart className="w-10 h-10 text-slate-400 mx-auto" />
-                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">No purchase bills recorded</p>
-                  <p className="text-[11px] text-slate-400">Add vendor purchase bills to view inward supply ledger.</p>
+                  <ShoppingCart className="w-10 h-10 text-stone-400 mx-auto" />
+                  <p className="text-xs font-bold text-stone-700 dark:text-stone-300">No purchase bills recorded</p>
+                  <p className="text-[11px] text-stone-400">Add vendor purchase bills to view inward supply ledger.</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
-                    <thead className="bg-slate-50 dark:bg-slate-900/60 text-slate-500 font-bold border-b border-slate-200/80 dark:border-slate-800 uppercase tracking-wider text-[10px]">
+                    <thead className="bg-[#fafaf9] dark:bg-[#141415]/60 text-slate-500 font-bold border-b border-stone-200/80 dark:border-stone-800 uppercase tracking-wider text-[10px]">
                       <tr>
                         <th className="py-3.5 px-4">Bill No</th>
                         <th className="py-3.5 px-4">Date</th>
@@ -456,17 +457,17 @@ export default function ReportsPage() {
                         <th className="py-3.5 px-4">Total Amount</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-mono">
-                      {purchases.map((p) => (
+                    <tbody className="divide-y divide-stone-100 dark:divide-stone-800/80 font-mono">
+                      {confirmedPurchases.map((p) => (
                         <tr
                           key={p.id}
-                          className="hover:bg-slate-50/70 dark:hover:bg-slate-700/20 transition-colors"
+                          className="hover:bg-stone-50/60 dark:hover:bg-stone-800/40 transition-colors"
                         >
-                          <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white tabular-nums">
+                          <td className="py-3.5 px-4 font-bold text-stone-900 dark:text-stone-100 tabular-nums">
                             {p.invoiceNumber}
                           </td>
                           <td className="py-3.5 px-4 text-slate-500 tabular-nums">{p.date}</td>
-                          <td className="py-3.5 px-4 font-sans font-semibold text-slate-900 dark:text-white">
+                          <td className="py-3.5 px-4 font-sans font-semibold text-stone-900 dark:text-stone-100">
                             {p.supplierName}
                           </td>
                           <td className="py-3.5 px-4 font-sans">
@@ -477,7 +478,7 @@ export default function ReportsPage() {
                           <td className="py-3.5 px-4 tabular-nums text-slate-600 dark:text-slate-300">
                             {formatINR(p.taxableAmount || (p.total ? Math.max(0, p.total - ((p.cgst || 0) + (p.sgst || 0) + (p.igst || 0))) : 0))}
                           </td>
-                          <td className="py-3.5 px-4 font-black tabular-nums text-slate-900 dark:text-white">
+                          <td className="py-3.5 px-4 font-black tabular-nums text-stone-900 dark:text-stone-100">
                             {formatINR(p.total)}
                           </td>
                         </tr>
@@ -495,17 +496,17 @@ export default function ReportsPage() {
         {/* ========================================================= */}
         {activeReport === "stock" && (
           <div className="space-y-4">
-            <div className="bg-white dark:bg-slate-800/90 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
+            <div className="bg-white dark:bg-[#1a1a1c] rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-xs overflow-hidden">
               {products.filter((p) => !p.isService).length === 0 ? (
                 <div className="py-16 text-center space-y-2">
-                  <Boxes className="w-10 h-10 text-slate-400 mx-auto" />
-                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">No physical goods in inventory</p>
-                  <p className="text-[11px] text-slate-400">Add stock products to calculate inventory asset valuation.</p>
+                  <Boxes className="w-10 h-10 text-stone-400 mx-auto" />
+                  <p className="text-xs font-bold text-stone-700 dark:text-stone-300">No physical goods in inventory</p>
+                  <p className="text-[11px] text-stone-400">Add stock products to calculate inventory asset valuation.</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
-                    <thead className="bg-slate-50 dark:bg-slate-900/60 text-slate-500 font-bold border-b border-slate-200/80 dark:border-slate-800 uppercase tracking-wider text-[10px]">
+                    <thead className="bg-[#fafaf9] dark:bg-[#141415]/60 text-slate-500 font-bold border-b border-stone-200/80 dark:border-stone-800 uppercase tracking-wider text-[10px]">
                       <tr>
                         <th className="py-3.5 px-4">Item & SKU</th>
                         <th className="py-3.5 px-4">HSN</th>
@@ -515,7 +516,7 @@ export default function ReportsPage() {
                         <th className="py-3.5 px-4">Total Inventory Value</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-mono">
+                    <tbody className="divide-y divide-stone-100 dark:divide-stone-800/80 font-mono">
                       {products
                         .filter((p) => !p.isService)
                         .map((p) => {
@@ -523,13 +524,13 @@ export default function ReportsPage() {
                           return (
                             <tr
                               key={p.id}
-                              className="hover:bg-slate-50/70 dark:hover:bg-slate-700/20 transition-colors"
+                              className="hover:bg-stone-50/60 dark:hover:bg-stone-800/40 transition-colors"
                             >
-                              <td className="py-3.5 px-4 font-sans font-bold text-slate-900 dark:text-white">
+                              <td className="py-3.5 px-4 font-sans font-bold text-stone-900 dark:text-stone-100">
                                 {p.name}
                               </td>
                               <td className="py-3.5 px-4 text-slate-500 tabular-nums">{p.hsn || "—"}</td>
-                              <td className="py-3.5 px-4 font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">
+                              <td className="py-3.5 px-4 font-bold text-[#047857] dark:text-emerald-400 tabular-nums">
                                 {p.stock} {p.unit}
                               </td>
                               <td className="py-3.5 px-4 tabular-nums text-slate-600 dark:text-slate-300">
@@ -538,7 +539,7 @@ export default function ReportsPage() {
                               <td className="py-3.5 px-4 tabular-nums text-slate-600 dark:text-slate-300">
                                 {formatINR(p.sellingPrice)}
                               </td>
-                              <td className="py-3.5 px-4 font-black tabular-nums text-slate-900 dark:text-white">
+                              <td className="py-3.5 px-4 font-black tabular-nums text-stone-900 dark:text-stone-100">
                                 {formatINR(valuation)}
                               </td>
                             </tr>

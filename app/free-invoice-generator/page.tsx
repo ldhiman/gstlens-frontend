@@ -5,19 +5,21 @@ import Link from "next/link";
 import {
   Receipt,
   Printer,
-  Download,
   Share2,
   Plus,
   Trash2,
   Sparkles,
-  ShieldCheck,
-  CheckCircle2,
-  QrCode,
   ArrowRight,
-  FileText,
 } from "lucide-react";
-import { formatINR, numberToWords, calculateLineTax, INDIAN_STATES } from "@/lib/gstBillingEngine";
+import { formatINR, numberToWords, INDIAN_STATES } from "@/lib/gstBillingEngine";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import WhatsAppShareModal from "@/components/WhatsAppShareModal";
+import {
+  generateCompactBillImage,
+  generateFullBillUrl,
+  CompactInvoiceData,
+} from "@/lib/invoiceImage";
+import { buildWhatsAppInvoiceMessage } from "@/lib/whatsapp";
 
 interface ItemRow {
   id: string;
@@ -121,32 +123,97 @@ export default function FreeInvoiceGeneratorPage() {
     window.print();
   };
 
-  const handleWhatsApp = () => {
-    const text = encodeURIComponent(
-      `🧾 *TAX INVOICE: ${invoiceNumber}*\n\n` +
-      `Dear ${buyerName},\n` +
-      `Invoice from *${sellerName}*:\n\n` +
-      `• *Invoice No:* ${invoiceNumber}\n` +
-      `• *Date:* ${invoiceDate}\n` +
-      `• *Total Amount:* ${formatINR(calculatedTotals.grandTotal)}\n` +
-      (sellerUpi ? `• *Pay via UPI:* upi://pay?pa=${sellerUpi}&pn=${encodeURIComponent(sellerName)}&am=${calculatedTotals.grandTotal}&cu=INR\n\n` : "\n\n") +
-      `Generated free with GSTLens - Effortless GST Invoicing.`
-    );
-    window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState<boolean>(false);
+  const [compactImageBlob, setCompactImageBlob] = useState<Blob | null>(null);
+  const [compactImageDataUrl, setCompactImageDataUrl] = useState<string | null>(null);
+  const [compactImageFile, setCompactImageFile] = useState<File | null>(null);
+  const [billUrl, setBillUrl] = useState<string>("");
+  const [shareMessageText, setShareMessageText] = useState<string>("");
+
+  const handleWhatsApp = async () => {
+    const compactData: CompactInvoiceData = {
+      invoiceNumber: invoiceNumber || "Invoice",
+      invoiceDate: invoiceDate || "",
+      placeOfSupply,
+      seller: {
+        tradeName: sellerName,
+        businessName: sellerName,
+        gstin: sellerGstin,
+        phone: sellerPhone,
+        address: sellerAddress,
+        upiId: sellerUpi,
+      },
+      client: {
+        name: buyerName,
+        gstin: buyerGstin,
+        address: buyerAddress,
+      },
+      items: items.map((it) => ({
+        name: it.name,
+        hsn: it.hsn,
+        quantity: it.quantity,
+        rate: it.rate,
+        taxPercent: it.gstRate,
+      })),
+      totals: {
+        taxableAmount: calculatedTotals.subtotal,
+        cgst: calculatedTotals.cgst,
+        sgst: calculatedTotals.sgst,
+        igst: calculatedTotals.igst,
+        grandTotal: calculatedTotals.grandTotal,
+        isInterstate,
+      },
+    };
+
+    const fullUrl = generateFullBillUrl(compactData);
+    setBillUrl(fullUrl);
+
+    const msg = buildWhatsAppInvoiceMessage({
+      invoice: {
+        invoice_number: invoiceNumber,
+        invoice_date: invoiceDate,
+        seller_gstin: sellerGstin,
+        seller_gstin_info: { trade_name: sellerName },
+        buyer_gstin: buyerGstin,
+        buyer_gstin_info: { trade_name: buyerName },
+        invoice_total: calculatedTotals.grandTotal,
+        items: items.map((it) => ({
+          description: it.name,
+          quantity: it.quantity,
+          taxable_amount: it.quantity * it.rate,
+          gst_rate: it.gstRate,
+        })),
+      },
+      sellerName,
+      sellerUpiId: sellerUpi,
+      fullBillUrl: fullUrl,
+    });
+    setShareMessageText(msg);
+
+    setShowWhatsAppModal(true);
+
+    try {
+      const imgResult = await generateCompactBillImage(compactData);
+      setCompactImageBlob(imgResult.blob);
+      setCompactImageDataUrl(imgResult.dataUrl);
+      setCompactImageFile(imgResult.file);
+    } catch (err) {
+      console.warn("Could not generate compact bill image:", err);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 print:bg-white print:text-black">
-      {/* Top SEO Header */}
-      <header className="print:hidden sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 sm:px-8 py-3.5 flex items-center justify-between">
+    <div className="min-h-screen bg-[#fafaf9] dark:bg-[#141415] text-stone-900 dark:text-stone-100 print:bg-white print:text-black">
+      {/* Top Header */}
+      <header className="print:hidden sticky top-0 z-30 bg-white/90 dark:bg-[#141415]/90 backdrop-blur-md border-b border-stone-200/80 dark:border-stone-800 px-4 sm:px-8 py-3 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-xs">
+          <div className="w-8 h-8 rounded-xl bg-[#047857] text-white flex items-center justify-center font-semibold shadow-xs">
             <Receipt className="w-4 h-4" />
           </div>
-          <span className="font-black text-slate-900 dark:text-white text-base">
-            GST<span className="text-indigo-600 dark:text-indigo-400">Lens</span>
+          <span className="font-semibold text-stone-900 dark:text-stone-100 text-sm sm:text-base">
+            GSTLens
           </span>
-          <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+          <span className="ml-1.5 px-2 py-0.5 rounded-md text-[10px] font-mono bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50">
             Free Tool
           </span>
         </Link>
@@ -154,24 +221,26 @@ export default function FreeInvoiceGeneratorPage() {
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <button
+            type="button"
             onClick={handleWhatsApp}
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 text-xs font-medium border border-stone-200/80 dark:border-stone-700 transition cursor-pointer"
           >
             <Share2 className="w-3.5 h-3.5" />
             <span>WhatsApp</span>
           </button>
           <button
+            type="button"
             onClick={handlePrint}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#047857] hover:bg-[#065f46] text-white text-xs font-medium shadow-xs transition cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5" />
             <span>Print / PDF</span>
           </button>
           <Link
             href="/login"
-            className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-semibold transition"
+            className="px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 text-xs font-medium transition"
           >
-            Sign In
+            Sign in
           </Link>
         </div>
       </header>
@@ -180,40 +249,40 @@ export default function FreeInvoiceGeneratorPage() {
       <main className="max-w-4xl mx-auto px-4 py-8 print:p-0 print:max-w-none">
         {/* SEO Title & Banner */}
         <div className="print:hidden text-center mb-6">
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-semibold text-stone-900 dark:text-stone-100 tracking-tight">
             Free Online GST Invoice Generator
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Create, calculate, print &amp; WhatsApp professional Indian GST tax invoices in 30 seconds. No signup required.
+          <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-1">
+            Create, calculate, print &amp; WhatsApp Rule 46 compliant tax invoices in seconds. No signup required.
           </p>
         </div>
 
         {/* Invoice Paper Box */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-10 shadow-xl print:border-none print:shadow-none print:p-0 print:rounded-none">
+        <div id="print-area" className="print-invoice-sheet bg-white dark:bg-[#1a1a1c] border border-stone-200/80 dark:border-stone-800 rounded-2xl p-6 sm:p-10 shadow-xs print:border-none print:shadow-none print:p-2.5 print:m-0 print:rounded-none">
           {/* Header row */}
-          <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
-            <div className="space-y-2 flex-1">
+          <div className="flex flex-col sm:row justify-between items-start gap-4 pb-6 border-b border-stone-100 dark:border-stone-800 print:pb-2 print:gap-2">
+            <div className="space-y-2 flex-1 w-full sm:w-auto print:space-y-1">
               <input
                 type="text"
                 value={sellerName}
                 onChange={(e) => setSellerName(e.target.value)}
                 placeholder="Your Business Name"
-                className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white bg-transparent border-b border-transparent hover:border-slate-300 dark:hover:border-slate-700 focus:border-indigo-600 focus:outline-none w-full"
+                className="text-xl sm:text-2xl font-semibold text-stone-900 dark:text-stone-100 bg-transparent border-b border-transparent hover:border-stone-300 dark:hover:border-stone-700 focus:border-[#047857] focus:outline-hidden w-full print:text-lg"
               />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs print:gap-1.5 print:text-[10px]">
                 <input
                   type="text"
                   value={sellerGstin}
                   onChange={(e) => setSellerGstin(e.target.value.toUpperCase())}
                   placeholder="Your GSTIN (15 Digits)"
-                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl px-2.5 py-1.5 font-mono text-xs focus:outline-hidden focus:ring-1 focus:ring-[#047857] print:border-none print:bg-transparent print:p-0 print:text-[10px]"
                 />
                 <input
                   type="text"
                   value={sellerPhone}
                   onChange={(e) => setSellerPhone(e.target.value)}
                   placeholder="Phone Number"
-                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl px-2.5 py-1.5 text-xs focus:outline-hidden focus:ring-1 focus:ring-[#047857] print:border-none print:bg-transparent print:p-0 print:text-[10px]"
                 />
               </div>
               <input
@@ -221,31 +290,31 @@ export default function FreeInvoiceGeneratorPage() {
                 value={sellerAddress}
                 onChange={(e) => setSellerAddress(e.target.value)}
                 placeholder="Shop / Office Address, City, State"
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl px-2.5 py-1.5 text-xs focus:outline-hidden focus:ring-1 focus:ring-[#047857] print:border-none print:bg-transparent print:p-0 print:text-[10px]"
               />
             </div>
 
-            <div className="sm:text-right space-y-2 shrink-0">
-              <span className="px-3 py-1 rounded-xl text-xs font-black bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 inline-block">
+            <div className="sm:text-right space-y-2 shrink-0 print:space-y-0.5">
+              <span className="px-3 py-1 rounded-md text-xs font-mono font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50 inline-block print:px-2 print:py-0.5 print:text-[10px]">
                 TAX INVOICE
               </span>
-              <div className="text-xs space-y-1">
+              <div className="text-xs space-y-1 print:space-y-0.5 print:text-[10px]">
                 <div className="flex items-center sm:justify-end gap-2">
-                  <span className="text-slate-400">Invoice No:</span>
+                  <span className="text-stone-400">Invoice No:</span>
                   <input
                     type="text"
                     value={invoiceNumber}
                     onChange={(e) => setInvoiceNumber(e.target.value)}
-                    className="font-mono font-bold bg-transparent border-b border-slate-200 dark:border-slate-700 w-32 text-right focus:outline-none"
+                    className="font-mono font-medium bg-transparent border-b border-stone-200 dark:border-stone-700 w-32 text-right focus:outline-hidden print:border-none print:p-0"
                   />
                 </div>
                 <div className="flex items-center sm:justify-end gap-2">
-                  <span className="text-slate-400">Date:</span>
+                  <span className="text-stone-400">Date:</span>
                   <input
                     type="date"
                     value={invoiceDate}
                     onChange={(e) => setInvoiceDate(e.target.value)}
-                    className="font-mono bg-transparent border-b border-slate-200 dark:border-slate-700 w-32 text-right focus:outline-none"
+                    className="font-mono bg-transparent border-b border-stone-200 dark:border-stone-700 w-32 text-right focus:outline-hidden text-xs print:border-none print:p-0"
                   />
                 </div>
               </div>
@@ -253,38 +322,38 @@ export default function FreeInvoiceGeneratorPage() {
           </div>
 
           {/* Bill To & POS */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-6 border-b border-slate-100 dark:border-slate-800 text-xs">
-            <div className="space-y-1.5">
-              <p className="font-bold uppercase tracking-wider text-[10px] text-slate-400">Bill To (Customer)</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-6 border-b border-stone-100 dark:border-stone-800 text-xs print:py-2 print:gap-2 print:text-[10px]">
+            <div className="space-y-1.5 print:space-y-0.5">
+              <p className="font-medium uppercase tracking-wider text-[10px] text-stone-400">Bill To (Customer)</p>
               <input
                 type="text"
                 value={buyerName}
                 onChange={(e) => setBuyerName(e.target.value)}
                 placeholder="Customer or Company Name"
-                className="font-bold text-slate-900 dark:text-white bg-transparent border-b border-slate-200 dark:border-slate-700 w-full py-0.5 focus:outline-none"
+                className="font-medium text-stone-900 dark:text-stone-100 bg-transparent border-b border-stone-200 dark:border-stone-700 w-full py-0.5 focus:outline-hidden print:border-none print:p-0"
               />
               <input
                 type="text"
                 value={buyerGstin}
                 onChange={(e) => setBuyerGstin(e.target.value.toUpperCase())}
                 placeholder="Customer GSTIN (Leave blank for B2C)"
-                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1 font-mono text-[11px] w-full focus:outline-none"
+                className="bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl px-2.5 py-1 font-mono text-[11px] w-full focus:outline-hidden print:border-none print:bg-transparent print:p-0 print:text-[10px]"
               />
               <input
                 type="text"
                 value={buyerAddress}
                 onChange={(e) => setBuyerAddress(e.target.value)}
                 placeholder="Customer Address"
-                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1 text-[11px] w-full focus:outline-none"
+                className="bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl px-2.5 py-1 text-[11px] w-full focus:outline-hidden print:border-none print:bg-transparent print:p-0 print:text-[10px]"
               />
             </div>
 
-            <div className="space-y-1.5">
-              <p className="font-bold uppercase tracking-wider text-[10px] text-slate-400">Place of Supply (State)</p>
+            <div className="space-y-1.5 print:space-y-0.5">
+              <p className="font-medium uppercase tracking-wider text-[10px] text-stone-400">Place of Supply (State)</p>
               <select
                 value={placeOfSupply}
                 onChange={(e) => setPlaceOfSupply(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none"
+                className="w-full bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl px-2.5 py-1.5 text-xs focus:outline-hidden print:border-none print:bg-transparent print:p-0"
               >
                 {INDIAN_STATES.map((st) => (
                   <option key={st.code} value={st.code}>
@@ -292,70 +361,70 @@ export default function FreeInvoiceGeneratorPage() {
                   </option>
                 ))}
               </select>
-              <p className="text-[11px] text-slate-400">
-                {isInterstate ? "Inter-State (IGST Applicable)" : "Intra-State (CGST + SGST Applicable)"}
+              <p className="text-[11px] text-stone-400 print:text-[9px]">
+                {isInterstate ? "Inter-state supply (IGST applicable)" : "Intra-state supply (CGST + SGST applicable)"}
               </p>
             </div>
           </div>
 
           {/* Line items table */}
-          <div className="py-6 overflow-x-auto">
-            <table className="w-full text-left text-xs">
+          <div className="py-6 overflow-x-auto print:py-2">
+            <table className="w-full text-left text-xs print:text-[10px]">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-400 font-bold uppercase text-[10px]">
-                  <th className="pb-2">Item Description</th>
-                  <th className="pb-2 w-20">HSN</th>
-                  <th className="pb-2 w-16 text-right">Qty</th>
-                  <th className="pb-2 w-24 text-right">Rate (₹)</th>
-                  <th className="pb-2 w-20 text-right">GST %</th>
-                  <th className="pb-2 w-24 text-right">Total (₹)</th>
+                <tr className="border-b border-stone-200 dark:border-stone-800 text-stone-400 font-medium uppercase text-[10px] tracking-wider">
+                  <th className="pb-2 print:pb-1">Item Description</th>
+                  <th className="pb-2 w-20 print:pb-1">HSN</th>
+                  <th className="pb-2 w-16 text-right print:pb-1">Qty</th>
+                  <th className="pb-2 w-24 text-right print:pb-1">Rate (₹)</th>
+                  <th className="pb-2 w-20 text-right print:pb-1">GST %</th>
+                  <th className="pb-2 w-24 text-right print:pb-1">Total (₹)</th>
                   <th className="pb-2 w-10 print:hidden"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
                 {items.map((it) => {
                   const lineTotal = it.quantity * it.rate;
                   return (
-                    <tr key={it.id}>
-                      <td className="py-2 pr-2">
+                    <tr key={it.id} className="print-avoid-break">
+                      <td className="py-2 pr-2 print:py-1">
                         <input
                           type="text"
                           value={it.name}
                           onChange={(e) => updateItem(it.id, "name", e.target.value)}
                           placeholder="Item name / service"
-                          className="w-full bg-transparent font-medium text-slate-900 dark:text-white focus:outline-none"
+                          className="w-full bg-transparent font-normal text-stone-900 dark:text-stone-100 focus:outline-hidden"
                         />
                       </td>
-                      <td className="py-2 pr-2">
+                      <td className="py-2 pr-2 print:py-1">
                         <input
                           type="text"
                           value={it.hsn}
                           onChange={(e) => updateItem(it.id, "hsn", e.target.value)}
                           placeholder="HSN"
-                          className="w-full bg-transparent font-mono text-[11px] focus:outline-none"
+                          className="w-full bg-transparent font-mono text-[11px] focus:outline-hidden print:text-[10px]"
                         />
                       </td>
-                      <td className="py-2 pr-2 text-right">
+                      <td className="py-2 pr-2 text-right print:py-1">
                         <input
                           type="number"
                           value={it.quantity}
                           onChange={(e) => updateItem(it.id, "quantity", Number(e.target.value))}
-                          className="w-14 text-right bg-transparent font-mono focus:outline-none"
+                          className="w-14 text-right bg-transparent font-mono tabular-nums focus:outline-hidden"
                         />
                       </td>
-                      <td className="py-2 pr-2 text-right">
+                      <td className="py-2 pr-2 text-right print:py-1">
                         <input
                           type="number"
                           value={it.rate}
                           onChange={(e) => updateItem(it.id, "rate", Number(e.target.value))}
-                          className="w-20 text-right bg-transparent font-mono focus:outline-none"
+                          className="w-20 text-right bg-transparent font-mono tabular-nums focus:outline-hidden"
                         />
                       </td>
-                      <td className="py-2 pr-2 text-right">
+                      <td className="py-2 pr-2 text-right print:py-1">
                         <select
                           value={it.gstRate}
                           onChange={(e) => updateItem(it.id, "gstRate", Number(e.target.value))}
-                          className="bg-transparent text-right font-mono focus:outline-none"
+                          className="bg-transparent text-right font-mono focus:outline-hidden"
                         >
                           <option value={0}>0%</option>
                           <option value={5}>5%</option>
@@ -364,13 +433,14 @@ export default function FreeInvoiceGeneratorPage() {
                           <option value={28}>28%</option>
                         </select>
                       </td>
-                      <td className="py-2 text-right font-mono font-bold text-slate-900 dark:text-white">
+                      <td className="py-2 text-right font-mono font-medium text-stone-900 dark:text-stone-100 tabular-nums print:py-1">
                         {formatINR(lineTotal)}
                       </td>
                       <td className="py-2 text-right print:hidden">
                         <button
+                          type="button"
                           onClick={() => removeItem(it.id)}
-                          className="text-slate-400 hover:text-rose-500 transition p-1"
+                          className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition p-1"
                           title="Remove item"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -385,85 +455,108 @@ export default function FreeInvoiceGeneratorPage() {
             <button
               onClick={addItem}
               type="button"
-              className="mt-3 print:hidden inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+              className="mt-3 print:hidden inline-flex items-center gap-1.5 text-xs font-medium text-[#047857] dark:text-emerald-400 hover:underline cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>+ Add Line Item</span>
+              <span>Add line item</span>
             </button>
           </div>
 
           {/* Totals Section */}
-          <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start gap-4 text-xs">
-            <div className="space-y-2 max-w-sm">
-              <p className="text-slate-400">
+          <div className="pt-4 border-t border-stone-100 dark:border-stone-800 flex flex-col sm:flex-row justify-between items-start gap-4 text-xs print:pt-2 print:gap-2 print:text-[10px]">
+            <div className="space-y-2 max-w-sm print:space-y-1">
+              <p className="text-stone-500">
                 Amount in words:{" "}
-                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                <span className="font-medium text-stone-800 dark:text-stone-200">
                   {numberToWords(calculatedTotals.grandTotal)}
                 </span>
               </p>
-              <div className="pt-2">
+              <div className="pt-1 print:pt-0.5">
                 <input
                   type="text"
                   value={sellerUpi}
                   onChange={(e) => setSellerUpi(e.target.value)}
-                  placeholder="UPI ID for instant QR code (e.g. name@upi)"
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1 text-xs focus:outline-none font-mono"
+                  placeholder="UPI ID for Bharat UPI QR (e.g. name@okhdfcbank)"
+                  className="w-full bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl px-2.5 py-1 text-xs focus:outline-hidden font-mono print:border-none print:bg-transparent print:p-0 print:text-[10px]"
                 />
               </div>
             </div>
 
-            <div className="w-full sm:w-64 space-y-1.5 font-mono text-right">
-              <div className="flex justify-between text-slate-500">
+            <div className="w-full sm:w-64 space-y-1.5 font-mono text-right print:space-y-0.5 print:text-[10px]">
+              <div className="flex justify-between text-stone-500">
                 <span>Taxable Value:</span>
-                <span>{formatINR(calculatedTotals.subtotal)}</span>
+                <span className="tabular-nums">{formatINR(calculatedTotals.subtotal)}</span>
               </div>
               {isInterstate ? (
-                <div className="flex justify-between text-slate-500">
+                <div className="flex justify-between text-stone-500">
                   <span>IGST:</span>
-                  <span>{formatINR(calculatedTotals.igst)}</span>
+                  <span className="tabular-nums">{formatINR(calculatedTotals.igst)}</span>
                 </div>
               ) : (
                 <>
-                  <div className="flex justify-between text-slate-500">
+                  <div className="flex justify-between text-stone-500">
                     <span>CGST:</span>
-                    <span>{formatINR(calculatedTotals.cgst)}</span>
+                    <span className="tabular-nums">{formatINR(calculatedTotals.cgst)}</span>
                   </div>
-                  <div className="flex justify-between text-slate-500">
+                  <div className="flex justify-between text-stone-500">
                     <span>SGST:</span>
-                    <span>{formatINR(calculatedTotals.sgst)}</span>
+                    <span className="tabular-nums">{formatINR(calculatedTotals.sgst)}</span>
                   </div>
                 </>
               )}
-              <div className="flex justify-between text-base font-black text-slate-900 dark:text-white pt-2 border-t border-slate-200 dark:border-slate-700">
+              <div className="flex justify-between text-sm sm:text-base font-semibold text-stone-900 dark:text-stone-100 pt-2 border-t border-stone-200 dark:border-stone-800 print:text-xs print:pt-1">
                 <span>Grand Total:</span>
-                <span>{formatINR(calculatedTotals.grandTotal)}</span>
+                <span className="tabular-nums">{formatINR(calculatedTotals.grandTotal)}</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Upgrade Callout */}
-        <div className="print:hidden mt-8 p-6 rounded-3xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-center space-y-3">
-          <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center mx-auto shadow-xs">
-            <Sparkles className="w-5 h-5" />
-          </div>
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">
-            Want to scan paper bills &amp; auto-save customer ledgers?
+        <div className="print:hidden mt-8 p-6 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-stone-200/80 dark:border-stone-800 text-center space-y-2.5 shadow-xs">
+          <h3 className="text-sm font-medium text-stone-900 dark:text-stone-100">
+            Need to scan paper purchase bills and auto-reconcile ITC?
           </h3>
-          <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto">
-            Get automated GSTR-1 JSON returns, AI bill scanning, Tally XML exports, and inventory management.
+          <p className="text-xs text-stone-500 dark:text-stone-400 max-w-md mx-auto">
+            Get automated GSTR-1 JSON returns, AI bill OCR scanning, Tally XML exports, and inventory management.
           </p>
-          <div>
+          <div className="pt-1">
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-xs transition"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#047857] hover:bg-[#065f46] text-white text-xs font-medium rounded-xl shadow-xs transition"
             >
-              <span>Get Free GSTLens Account</span>
-              <ArrowRight className="w-4 h-4" />
+              <span>Get started free</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
       </main>
+
+      {/* WhatsApp Share Modal with Compact Image & Full Bill Link */}
+      {showWhatsAppModal && (
+        <WhatsAppShareModal
+          isOpen={showWhatsAppModal}
+          onClose={() => setShowWhatsAppModal(false)}
+          invoiceNumber={invoiceNumber || "Invoice"}
+          invoiceDate={invoiceDate || ""}
+          client={{
+            name: buyerName,
+            gstin: buyerGstin,
+          }}
+          seller={{
+            name: sellerName || "Merchant",
+            phone: sellerPhone,
+            gstin: sellerGstin,
+            upiId: sellerUpi,
+          }}
+          grandTotal={calculatedTotals.grandTotal}
+          messageText={shareMessageText}
+          billUrl={billUrl}
+          compactImageBlob={compactImageBlob}
+          compactImageDataUrl={compactImageDataUrl}
+          compactImageFile={compactImageFile}
+        />
+      )}
     </div>
   );
 }

@@ -355,27 +355,27 @@ export default function TallyExportModal({
       />
 
       {/* Modal Card */}
-      <div className="relative bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-2xl shadow-2xl border-t sm:border border-slate-200/80 dark:border-slate-800 max-h-[94vh] sm:max-h-[90vh] flex flex-col z-10 overflow-hidden animate-slide-up">
+      <div className="relative bg-white dark:bg-[#161513] text-stone-900 dark:text-stone-100 rounded-t-3xl sm:rounded-2xl w-full sm:max-w-2xl shadow-2xl border-t sm:border border-stone-200/80 dark:border-white/[0.08] max-h-[94vh] sm:max-h-[90vh] flex flex-col z-10 overflow-hidden animate-slide-up">
         {/* Mobile Swipe Handle */}
-        <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mt-3 mb-1 sm:hidden" />
+        <div className="w-12 h-1.5 bg-stone-300 dark:bg-stone-700 rounded-full mx-auto mt-3 mb-1 sm:hidden" />
 
         {/* Header */}
-        <div className="flex-shrink-0 px-5 pt-4 pb-3.5 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex-shrink-0 px-5 pt-4 pb-3.5 border-b border-stone-200/70 dark:border-white/[0.06]">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-tr from-emerald-600 via-teal-600 to-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-md shadow-emerald-500/20 flex-shrink-0">
+              <div className="w-9 h-9 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 rounded-xl flex items-center justify-center text-[#047857] dark:text-emerald-400 shrink-0">
                 <FileCode className="w-5 h-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                  <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">
                     Export to Tally Prime & ERP 9
                   </h2>
-                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-[#047857] dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/40">
                     Multi-Doc XML
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
                   Double-entry accounting vouchers with custom ledgers & XML preview
                 </p>
               </div>
@@ -383,7 +383,7 @@ export default function TallyExportModal({
 
             <button
               onClick={onClose}
-              className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors"
               aria-label="Close dialog"
             >
               <X className="w-5 h-5" />
@@ -395,7 +395,7 @@ export default function TallyExportModal({
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           {/* Voucher Type Selector (4 Types: Sales, Purchase, Credit Note, Debit Note) */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+            <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block">
               1. Tally Voucher Type
             </label>
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
@@ -431,19 +431,19 @@ export default function TallyExportModal({
                   onClick={() => setVoucherType(t.id as VoucherType)}
                   className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                     voucherType === t.id
-                      ? "border-indigo-600 dark:border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40 shadow-xs ring-1 ring-indigo-500/20"
-                      : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300"
+                      ? "border-[#047857] dark:border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30 shadow-xs ring-1 ring-emerald-500/20"
+                      : "border-stone-200 dark:border-stone-800 bg-white dark:bg-[#1a1a1c] hover:border-stone-300 dark:hover:border-stone-700"
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                    <span className="text-xs font-bold text-stone-900 dark:text-stone-100">
                       {t.label}
                     </span>
                     {voucherType === t.id && (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#047857] dark:text-emerald-400" />
                     )}
                   </div>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  <p className="text-[10px] text-stone-500 dark:text-stone-400 mt-0.5">
                     {t.sub}
                   </p>
                 </button>
@@ -452,14 +452,14 @@ export default function TallyExportModal({
           </div>
 
           {/* Date Range Filtering Section */}
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-3">
+          <div className="p-3.5 rounded-xl bg-stone-50 dark:bg-[#1a1a1c] border border-stone-200/80 dark:border-stone-800 space-y-3">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+              <label className="text-xs font-bold text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-[#047857] dark:text-emerald-400" />
                 2. Filter by Date Range
               </label>
               {(startDate || endDate) && (
-                <span className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400">
+                <span className="text-[10px] font-medium text-[#047857] dark:text-emerald-400">
                   {startDate || "Start"} to {endDate || "End"}
                 </span>
               )}
@@ -480,8 +480,8 @@ export default function TallyExportModal({
                   onClick={() => handlePresetSelect(preset.id as DatePreset)}
                   className={`px-2.5 py-1 rounded-xl text-[11px] font-semibold transition cursor-pointer ${
                     datePreset === preset.id
-                      ? "bg-indigo-600 text-white shadow-xs"
-                      : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      ? "bg-[#047857] text-white shadow-xs"
+                      : "bg-white dark:bg-[#161513] text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800"
                   }`}
                 >
                   {preset.label}
@@ -503,7 +503,7 @@ export default function TallyExportModal({
                       setDatePreset("custom");
                       setStartDate(e.target.value);
                     }}
-                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl px-3 py-1.5 text-xs outline-none focus:border-indigo-500"
+                    className="w-full bg-white dark:bg-[#161513] border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-xl px-3 py-1.5 text-xs outline-none focus:border-[#047857]"
                   />
                 </div>
                 <div>
@@ -517,7 +517,7 @@ export default function TallyExportModal({
                       setDatePreset("custom");
                       setEndDate(e.target.value);
                     }}
-                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl px-3 py-1.5 text-xs outline-none focus:border-indigo-500"
+                    className="w-full bg-white dark:bg-[#161513] border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-xl px-3 py-1.5 text-xs outline-none focus:border-[#047857]"
                   />
                 </div>
               </div>
@@ -527,8 +527,8 @@ export default function TallyExportModal({
           {/* Granular Invoice Selection Checklist */}
           <div className="space-y-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <CheckSquare className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+              <label className="text-xs font-bold text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
+                <CheckSquare className="w-3.5 h-3.5 text-[#047857] dark:text-emerald-400" />
                 3. Select Invoices to Export ({selectedIds.size}/
                 {dateFilteredInvoices.length})
               </label>
@@ -537,7 +537,7 @@ export default function TallyExportModal({
                 <button
                   type="button"
                   onClick={selectAllVisible}
-                  className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                  className="text-[11px] font-semibold text-[#047857] dark:text-emerald-400 hover:underline cursor-pointer"
                 >
                   Select All
                 </button>
@@ -554,20 +554,20 @@ export default function TallyExportModal({
 
             {/* Checklist Search Bar */}
             <div className="relative">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
               <input
                 type="text"
                 placeholder="Search by invoice #, party name, or GSTIN..."
                 value={invoiceSearch}
                 onChange={(e) => setInvoiceSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 outline-none focus:border-indigo-500 transition"
+                className="w-full pl-9 pr-3 py-2 bg-stone-50 dark:bg-[#1a1a1c]/70 border border-stone-200 dark:border-stone-700 rounded-xl text-xs text-slate-800 dark:text-slate-200 placeholder:text-stone-400 outline-none focus:border-[#047857] transition"
               />
             </div>
 
             {/* Scrollable Checklist Box */}
             <div className="max-h-44 overflow-y-auto rounded-2xl border border-slate-200/80 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900/50">
               {visibleInvoices.length === 0 ? (
-                <div className="p-4 text-center text-xs text-slate-400">
+                <div className="p-4 text-center text-xs text-stone-400">
                   No invoices found matching current filter.
                 </div>
               ) : (
@@ -579,16 +579,16 @@ export default function TallyExportModal({
                       onClick={() => toggleInvoice(inv.id)}
                       className={`px-3 py-2 flex items-center justify-between gap-3 text-xs transition cursor-pointer select-none ${
                         isChecked
-                          ? "bg-indigo-50/30 dark:bg-indigo-950/20"
-                          : "hover:bg-slate-50 dark:hover:bg-slate-800/40"
+                          ? "bg-emerald-50/30 dark:bg-emerald-950/20"
+                          : "hover:bg-stone-50 dark:hover:bg-[#1a1a1c]"
                       }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div
                           className={`w-4 h-4 rounded flex items-center justify-center border transition-colors flex-shrink-0 ${
                             isChecked
-                              ? "bg-indigo-600 border-indigo-600 text-white"
-                              : "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
+                              ? "bg-[#047857] border-[#047857] text-white"
+                              : "border-slate-300 dark:border-slate-600 bg-white dark:bg-[#161513]"
                           }`}
                         >
                           {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
@@ -597,8 +597,8 @@ export default function TallyExportModal({
                           <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">
                             {inv.partyName}
                           </p>
-                          <p className="text-[10px] text-slate-400 truncate">
-                            <span className="font-mono text-slate-600 dark:text-slate-400 font-bold">
+                          <p className="text-[10px] text-stone-400 truncate">
+                            <span className="font-mono text-slate-600 dark:text-stone-400 font-bold">
                               {inv.invoice_number}
                             </span>{" "}
                             • {inv.invoice_date}
@@ -607,10 +607,10 @@ export default function TallyExportModal({
                       </div>
 
                       <div className="text-right flex-shrink-0">
-                        <p className="text-xs font-bold text-slate-900 dark:text-slate-100 font-mono tabular-nums">
+                        <p className="text-xs font-bold text-stone-900 dark:text-stone-100 font-mono tabular-nums">
                           {formatINR(inv.invoice_total)}
                         </p>
-                        <p className="text-[10px] text-slate-400 font-mono tabular-nums">
+                        <p className="text-[10px] text-stone-400 font-mono tabular-nums">
                           Taxable: {formatINR(inv.taxable_value)}
                         </p>
                       </div>
@@ -623,7 +623,7 @@ export default function TallyExportModal({
 
           {/* Target Company Name */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+            <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block">
               4. Tally Target Company Name
             </label>
             <input
@@ -631,31 +631,31 @@ export default function TallyExportModal({
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
               placeholder="e.g. Acme Enterprises Pvt Ltd"
-              className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl px-3.5 py-2 text-xs sm:text-sm focus:border-indigo-500 outline-none transition"
+              className="w-full bg-stone-50 dark:bg-[#1a1a1c]/70 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-xl px-3.5 py-2 text-xs sm:text-sm focus:border-[#047857] outline-none transition"
             />
-            <p className="text-[10px] text-slate-400">
+            <p className="text-[10px] text-stone-400">
               Must match the active company name in your Tally Prime workspace
             </p>
           </div>
 
           {/* Custom Ledger Mappings Accordion */}
-          <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
+          <div className="border border-stone-200/80 dark:border-stone-800 rounded-2xl overflow-hidden">
             <button
               type="button"
               onClick={() => setShowLedgerSettings(!showLedgerSettings)}
-              className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800/40 text-left text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              className="w-full px-4 py-2 bg-stone-50 dark:bg-[#1a1a1c]/40 text-left text-xs font-bold text-stone-700 dark:text-stone-300 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
             >
               <span className="flex items-center gap-1.5">
-                <Settings2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                <Settings2 className="w-3.5 h-3.5 text-[#047857] dark:text-emerald-400" />
                 Custom Ledger Names (Configurable Mappings)
               </span>
-              <span className="text-[10px] text-indigo-600 dark:text-indigo-400">
+              <span className="text-[10px] text-[#047857] dark:text-emerald-400">
                 {showLedgerSettings ? "Hide Ledgers" : "Configure Ledgers"}
               </span>
             </button>
 
             {showLedgerSettings && (
-              <div className="p-3.5 space-y-3 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 text-xs">
+              <div className="p-3.5 space-y-3 bg-white dark:bg-slate-900 border-t border-stone-100 dark:border-stone-800 text-xs">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <span className="text-[10px] text-slate-500 font-medium block mb-1">
@@ -668,7 +668,7 @@ export default function TallyExportModal({
                         setLedgerConfig({ ...ledgerConfig, salesLedger: e.target.value })
                       }
                       placeholder="Sales Account @ {rate}%"
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs outline-none"
+                      className="w-full bg-stone-50 dark:bg-[#1a1a1c] border border-stone-200 dark:border-stone-700 rounded-xl px-2.5 py-1.5 text-xs outline-none"
                     />
                   </div>
 
@@ -686,7 +686,7 @@ export default function TallyExportModal({
                         })
                       }
                       placeholder="Purchase Account @ {rate}%"
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs outline-none"
+                      className="w-full bg-stone-50 dark:bg-[#1a1a1c] border border-stone-200 dark:border-stone-700 rounded-xl px-2.5 py-1.5 text-xs outline-none"
                     />
                   </div>
 
@@ -700,7 +700,7 @@ export default function TallyExportModal({
                       onChange={(e) =>
                         setLedgerConfig({ ...ledgerConfig, outputCgst: e.target.value })
                       }
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs outline-none"
+                      className="w-full bg-stone-50 dark:bg-[#1a1a1c] border border-stone-200 dark:border-stone-700 rounded-xl px-2.5 py-1.5 text-xs outline-none"
                     />
                   </div>
 
@@ -714,7 +714,7 @@ export default function TallyExportModal({
                       onChange={(e) =>
                         setLedgerConfig({ ...ledgerConfig, outputSgst: e.target.value })
                       }
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs outline-none"
+                      className="w-full bg-stone-50 dark:bg-[#1a1a1c] border border-stone-200 dark:border-stone-700 rounded-xl px-2.5 py-1.5 text-xs outline-none"
                     />
                   </div>
 
@@ -728,7 +728,7 @@ export default function TallyExportModal({
                       onChange={(e) =>
                         setLedgerConfig({ ...ledgerConfig, roundOff: e.target.value })
                       }
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs outline-none"
+                      className="w-full bg-stone-50 dark:bg-[#1a1a1c] border border-stone-200 dark:border-stone-700 rounded-xl px-2.5 py-1.5 text-xs outline-none"
                     />
                   </div>
                 </div>
@@ -737,11 +737,11 @@ export default function TallyExportModal({
           </div>
 
           {/* XML Live Preview Accordion */}
-          <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
+          <div className="border border-stone-200/80 dark:border-stone-800 rounded-2xl overflow-hidden">
             <button
               type="button"
               onClick={() => setShowXmlPreview(!showXmlPreview)}
-              className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800/40 text-left text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              className="w-full px-4 py-2 bg-stone-50 dark:bg-[#1a1a1c]/40 text-left text-xs font-bold text-stone-700 dark:text-stone-300 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
             >
               <span className="flex items-center gap-1.5">
                 <Eye className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -755,7 +755,7 @@ export default function TallyExportModal({
             {showXmlPreview && (
               <div className="p-3 bg-slate-900 text-slate-200 border-t border-slate-800 space-y-2">
                 <div className="flex items-center justify-between text-[11px] pb-1 border-b border-slate-800">
-                  <span className="text-slate-400 font-mono">
+                  <span className="text-stone-400 font-mono">
                     XML Sample (First 2 Vouchers)
                   </span>
                   <button
@@ -775,29 +775,29 @@ export default function TallyExportModal({
           </div>
 
           {/* Import Guide Accordion */}
-          <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
+          <div className="border border-stone-200/80 dark:border-stone-800 rounded-2xl overflow-hidden">
             <button
               type="button"
               onClick={() => setShowGuide(!showGuide)}
-              className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800/40 text-left text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              className="w-full px-4 py-2 bg-stone-50 dark:bg-[#1a1a1c]/40 text-left text-xs font-bold text-stone-700 dark:text-stone-300 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
             >
               <span className="flex items-center gap-1.5">
                 <BookOpen className="w-3.5 h-3.5 text-slate-500" />
                 How to import this XML into Tally Prime?
               </span>
-              <span className="text-[10px] text-indigo-600 dark:text-indigo-400">
+              <span className="text-[10px] text-[#047857] dark:text-emerald-400">
                 {showGuide ? "Hide Steps" : "View Steps"}
               </span>
             </button>
 
             {showGuide && (
-              <div className="p-3.5 space-y-1.5 text-xs text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 text-[11px] leading-relaxed">
+              <div className="p-3.5 space-y-1.5 text-xs text-stone-600 dark:text-stone-300 bg-white dark:bg-slate-900 border-t border-stone-100 dark:border-stone-800 text-[11px] leading-relaxed">
                 <p>
                   <strong>1.</strong> In Tally Prime, open your target company.
                 </p>
                 <p>
                   <strong>2.</strong> Press{" "}
-                  <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono">
+                  <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-stone-200 dark:border-stone-700 font-mono">
                     Alt + O
                   </kbd>{" "}
                   (Import Data).
@@ -807,7 +807,7 @@ export default function TallyExportModal({
                 </p>
                 <p>
                   <strong>4.</strong> Select this downloaded{" "}
-                  <code className="text-indigo-600 dark:text-indigo-400 font-mono">
+                  <code className="text-[#047857] dark:text-emerald-400 font-mono">
                     .xml
                   </code>{" "}
                   file and press Enter.
@@ -818,17 +818,17 @@ export default function TallyExportModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="flex-shrink-0 p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/90 space-y-3">
+        <div className="flex-shrink-0 p-4 border-t border-stone-100 dark:border-stone-800 bg-stone-50/80 dark:bg-[#141415]/90 space-y-3">
           {/* Real-time Balance Summary */}
           <div className="flex items-center justify-between text-xs px-1">
-            <div className="text-slate-500 dark:text-slate-400">
+            <div className="text-stone-500 dark:text-stone-400">
               Selected:{" "}
-              <strong className="text-slate-900 dark:text-slate-100 font-semibold">
+              <strong className="text-stone-900 dark:text-stone-100 font-semibold">
                 {invoicesToExport.length} vouchers
               </strong>
             </div>
             <div className="text-right">
-              <span className="text-slate-400 text-[10px] mr-1.5 font-mono">
+              <span className="text-stone-400 text-[10px] mr-1.5 font-mono">
                 Taxable: {formatINR(totalTaxable)}
               </span>
               <strong className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">
@@ -840,14 +840,14 @@ export default function TallyExportModal({
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition active:scale-98 min-h-[44px] cursor-pointer"
+              className="flex-1 py-2.5 px-4 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-[#161513] text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition active:scale-98 min-h-[44px] cursor-pointer"
             >
               Cancel
             </button>
             <button
               onClick={handleExport}
               disabled={isExporting || invoicesToExport.length === 0}
-              className="flex-[2] py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-700 hover:to-indigo-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-emerald-500/20 active:scale-98 transition flex items-center justify-center gap-2 min-h-[44px] disabled:opacity-50 cursor-pointer"
+              className="flex-[2] py-2.5 px-4 rounded-xl bg-[#047857] hover:bg-[#065f46] text-white text-xs sm:text-sm font-semibold shadow-sm active:scale-98 transition flex items-center justify-center gap-2 min-h-[44px] disabled:opacity-50 cursor-pointer"
             >
               <Download className="w-4 h-4" />
               {isExporting

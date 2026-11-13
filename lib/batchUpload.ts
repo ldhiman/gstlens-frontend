@@ -134,9 +134,9 @@ export async function runBatchUploadQueue(
           summary.duplicates++;
         }
 
-        // Save into local draft storage if function provided
+        // Save into local draft storage if function provided - every scanned bill is saved as draft first
         if (options.saveDraftFn) {
-          const saveStatus = dupResult.isDuplicate ? "draft" : "auto_saved";
+          const saveStatus = "draft";
           const localId = await options.saveDraftFn(data, saveStatus);
           currentItem.localId = localId;
           data._local_id = localId;

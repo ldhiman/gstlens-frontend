@@ -40,25 +40,25 @@ export default async function GSTInfoResultPage({ params }: Props) {
 
   if (!data || data.legal_name === "N/A") {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+      <div className="min-h-screen bg-[#fafaf9] dark:bg-[#141415] text-stone-900 dark:text-stone-100 transition-colors">
         <Header />
         <main className="max-w-xl mx-auto px-4 py-16 text-center">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 sm:p-10 border border-slate-200/80 dark:border-slate-800 shadow-xl space-y-4">
+          <div className="bg-white dark:bg-[#1a1a1c] rounded-2xl p-6 sm:p-8 border border-stone-200/80 dark:border-stone-800 shadow-xl space-y-4">
             <div className="w-16 h-16 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto shadow-inner">
               <XCircle className="w-8 h-8" />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+            <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">
               GSTIN Not Found or Inactive
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
-              No active GST registration record was found for <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{gstin}</span>. Please verify the 15-digit number and try again.
+            <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 max-w-sm mx-auto leading-relaxed">
+              No active GST registration record was found for <span className="font-mono font-bold text-stone-800 dark:text-stone-200">{gstin}</span>. Please verify the 15-digit number and try again.
             </p>
             <div className="pt-4">
               <Link
                 href="/gst-info"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-500/25 transition active:scale-95"
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#047857] hover:bg-[#065f46] text-white font-semibold text-xs shadow-sm transition active:scale-95 cursor-pointer"
               >
-                <ArrowLeft className="w-4 h-4" /> Try Another GSTIN
+                <ArrowLeft className="w-4 h-4" /> Try another GSTIN
               </Link>
             </div>
           </div>
@@ -68,7 +68,7 @@ export default async function GSTInfoResultPage({ params }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors pb-24 md:pb-12">
+    <div className="min-h-screen bg-[#fafaf9] dark:bg-[#141415] text-stone-900 dark:text-stone-100 transition-colors pb-24 md:pb-12">
       <Header />
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
@@ -76,7 +76,7 @@ export default async function GSTInfoResultPage({ params }: Props) {
         <div className="flex items-center justify-between">
           <Link
             href="/gst-info"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 hover:text-[#047857] dark:text-stone-400 dark:hover:text-emerald-400 transition"
           >
             <ArrowLeft className="w-4 h-4" /> Search Another GSTIN
           </Link>
@@ -90,13 +90,13 @@ export default async function GSTInfoResultPage({ params }: Props) {
         </div>
 
         {/* Hero Card */}
-        <div className="p-6 sm:p-8 bg-gradient-to-r from-emerald-600 via-teal-600 to-slate-900 rounded-3xl text-white shadow-xl shadow-emerald-500/10 space-y-4">
+        <div className="p-6 sm:p-7 bg-white dark:bg-[#1a1a1c] rounded-2xl border border-stone-200/80 dark:border-stone-800 text-stone-900 dark:text-stone-100 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <span className="text-[11px] uppercase tracking-wider text-emerald-200 font-bold block">
+              <span className="text-[11px] uppercase tracking-wider text-stone-400 font-mono text-[11px] block">
                 Trade Name
               </span>
-              <h1 className="text-xl sm:text-2xl font-black tracking-tight mt-0.5">
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight mt-0.5 text-stone-900 dark:text-stone-100">
                 {data.trade_name || data.legal_name}
               </h1>
             </div>
@@ -122,10 +122,10 @@ export default async function GSTInfoResultPage({ params }: Props) {
         </div>
 
         {/* Business Details Card */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm transition-colors space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
-            <Building2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-            <h2 className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+        <div className="bg-white dark:bg-[#1a1a1c] rounded-3xl p-6 border border-stone-200/80 dark:border-stone-800 shadow-sm transition-colors space-y-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-stone-100 dark:border-stone-800">
+            <Building2 className="w-5 h-5 text-[#047857] dark:text-emerald-400" />
+            <h2 className="font-bold text-stone-900 dark:text-stone-100 text-sm">
               Business & Registration Particulars
             </h2>
           </div>
@@ -142,15 +142,15 @@ export default async function GSTInfoResultPage({ params }: Props) {
         <div className="flex flex-col sm:flex-row gap-3 pt-2">
           <Link
             href="/dashboard"
-            className="flex-1 py-3 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs text-center shadow-md shadow-indigo-500/25 transition active:scale-98"
+            className="flex-1 py-2.5 px-5 rounded-xl bg-[#047857] hover:bg-[#065f46] text-white font-semibold text-xs text-center shadow-sm transition active:scale-98 cursor-pointer"
           >
-            Create Invoice with this GSTIN
+            Create invoice with this GSTIN
           </Link>
           <Link
             href="/gst-info"
-            className="flex-1 py-3 px-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs text-center shadow-xs transition active:scale-98"
+            className="flex-1 py-2.5 px-5 rounded-xl bg-white dark:bg-[#1a1a1c] border border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 font-semibold text-xs text-center shadow-xs transition active:scale-98 cursor-pointer"
           >
-            Verify Another Number
+            Verify another number
           </Link>
         </div>
       </main>
@@ -160,9 +160,9 @@ export default async function GSTInfoResultPage({ params }: Props) {
 
 function InfoTile({ label, value, mono = false }: { label: string; value?: string; mono?: boolean }) {
   return (
-    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{label}</p>
-      <p className={`text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 mt-1 truncate ${mono ? "font-mono" : ""}`}>
+    <div className="p-3.5 rounded-2xl bg-stone-50 dark:bg-stone-900/60/60 border border-stone-100 dark:border-stone-800">
+      <p className="text-[11px] text-stone-500 dark:text-stone-400 font-medium">{label}</p>
+      <p className={`text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100 mt-1 truncate ${mono ? "font-mono" : ""}`}>
         {value || "-"}
       </p>
     </div>

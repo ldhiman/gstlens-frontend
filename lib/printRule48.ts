@@ -8,11 +8,20 @@
  * - Supply of Services (Duplicate):
  *     1. Original for Recipient (Rule 48(2)(a))
  *     2. Duplicate for Supplier (Rule 48(2)(b))
- * - Eco-Saver Mode (Paper Loss Reduction):
- *     Dual 2-in-1 copy (Original + Duplicate on 1 A4 sheet) for small item counts.
+ * - Eco-Saver Modes (Paper Loss Reduction):
+ *     - Dual 2-in-1: Original + Duplicate on 1 A4 sheet (50% Paper Saved)
+ *     - Triple 3-in-1: Original + Duplicate + Triplicate on 1 A4 sheet (67% Paper Saved)
+ *     - Smart 3-in-2: Sheet 1: Original | Sheet 2: Duplicate + Triplicate (33% Paper Saved)
  */
 
-export type Rule48CopyType = "original" | "duplicate" | "triplicate" | "all" | "eco-dual";
+export type Rule48CopyType =
+  | "original"
+  | "duplicate"
+  | "triplicate"
+  | "all"
+  | "eco-dual"
+  | "eco-triple"
+  | "eco-3in2";
 
 export interface Rule48BadgeInfo {
   badge: string;
@@ -20,7 +29,14 @@ export interface Rule48BadgeInfo {
   color: string;
 }
 
-export const RULE_48_COPIES: { id: Rule48CopyType; title: string; subtitle: string; label: string }[] = [
+export const RULE_48_COPIES: {
+  id: Rule48CopyType;
+  title: string;
+  subtitle: string;
+  label: string;
+  savings?: string;
+  recommendedMaxItems?: number;
+}[] = [
   {
     id: "original",
     title: "Original for Recipient",
@@ -43,13 +59,31 @@ export const RULE_48_COPIES: { id: Rule48CopyType; title: string; subtitle: stri
     id: "all",
     title: "All 3 Copies (Rule 48 Triplicate)",
     subtitle: "Print 3 Clean Pages (Original + Duplicate + Triplicate)",
-    label: "ALL 3 COPIES",
+    label: "ALL 3 COPIES (3 PAGES)",
   },
   {
     id: "eco-dual",
     title: "2-in-1 Eco-Saver (2 Copies on 1 A4)",
-    subtitle: "Original + Duplicate on 1 Single A4 Sheet (50% Paper Saved)",
+    subtitle: "Original + Duplicate on 1 Single A4 Sheet",
     label: "2-IN-1 ECO-SAVER",
+    savings: "50% Paper Saved",
+    recommendedMaxItems: 6,
+  },
+  {
+    id: "eco-triple",
+    title: "3-in-1 Eco-Saver (3 Copies on 1 A4)",
+    subtitle: "Original + Duplicate + Triplicate on 1 Single A4 Sheet",
+    label: "3-IN-1 ECO-SAVER",
+    savings: "67% Paper Saved",
+    recommendedMaxItems: 4,
+  },
+  {
+    id: "eco-3in2",
+    title: "3-in-2 Eco-Saver (3 Copies on 2 A4)",
+    subtitle: "Sheet 1: Full Original | Sheet 2: Duplicate + Triplicate",
+    label: "3-IN-2 ECO-SAVER",
+    savings: "33% Paper Saved",
+    recommendedMaxItems: 8,
   },
 ];
 
@@ -73,6 +107,18 @@ export function getRule48CopyBadge(copy: Rule48CopyType): Rule48BadgeInfo {
         sub: "(Rule 48 Dual Copy — Eco-Saver)",
         color: "text-emerald-800 bg-emerald-50 border-emerald-300",
       };
+    case "eco-triple":
+      return {
+        badge: "ORIGINAL / DUPLICATE / TRIPLICATE (3-IN-1)",
+        sub: "(Rule 48 Triplicate Copy — 3-in-1 Eco-Saver)",
+        color: "text-emerald-800 bg-emerald-50 border-emerald-300",
+      };
+    case "eco-3in2":
+      return {
+        badge: "RULE 48 TRIPLICATE (3-IN-2)",
+        sub: "(Rule 48 Triplicate Copy — 3-in-2 Eco-Saver)",
+        color: "text-teal-800 bg-teal-50 border-teal-300",
+      };
     case "original":
     default:
       return {
@@ -81,4 +127,37 @@ export function getRule48CopyBadge(copy: Rule48CopyType): Rule48BadgeInfo {
         color: "text-blue-800 bg-blue-50 border-blue-300",
       };
   }
+}
+
+export interface PrintEligibility {
+  can3in1: boolean;
+  can3in2: boolean;
+  can2in1: boolean;
+  reason3in1: string;
+  reason3in2: string;
+}
+
+/**
+ * Checks whether an invoice is eligible for eco-saver compact layouts based on
+ * the number of line items and layout footprint.
+ */
+export function checkPrintEligibility(
+  itemCount: number,
+  hasTerms: boolean = true
+): PrintEligibility {
+  const can3in1 = itemCount <= 3 || (itemCount <= 4 && !hasTerms);
+  const can3in2 = itemCount <= 8;
+  const can2in1 = itemCount <= 6;
+
+  return {
+    can3in1,
+    can3in2,
+    can2in1,
+    reason3in1: can3in1
+      ? `Eligible for 3-in-1 (${itemCount} items): fits all 3 copies on 1 A4 sheet, saving 67% paper`
+      : `Invoice has ${itemCount} items; recommended max is 3 items for 3-in-1. Use 3-in-2 instead.`,
+    reason3in2: can3in2
+      ? `Eligible for 3-in-2 (${itemCount} items): prints all 3 copies across 2 A4 sheets, saving 33% paper`
+      : `Invoice has ${itemCount} items; standard 3-page Triplicate recommended.`,
+  };
 }

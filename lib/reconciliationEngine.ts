@@ -43,12 +43,15 @@ export interface ReconRecord {
   id: string;
   supplierGstin: string;
   supplierName: string;
+  supplierPhone?: string;
   invoiceNumber: string;
   invoiceDate: string;
   twoBValue: number;
   twoBTax: { igst: number; cgst: number; sgst: number; cess: number };
   bookValue: number;
+  bookTax?: { igst: number; cgst: number; sgst: number; cess: number };
   diff: number;
+  taxDiff?: number;
   status: ReconMatchStatus;
   matchType?: "exact" | "fuzzy_inum" | "mismatch_amount";
   itcAvailable: boolean;
@@ -121,14 +124,21 @@ export function runGstr2bReconciliation(
   const refDate = options?.referenceDate || new Date();
 
   // Flatten and prepare book purchases with normalized keys
-  const indexedPurchases = bookPurchases.map((p) => ({
-    raw: p,
-    normGstin: (p.supplierGstin || "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase(),
-    normInv: normalizeInvoiceKey(p.invoiceNumber),
-    normInvPlain: (p.invoiceNumber || "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase(),
-    total: Number(p.total) || 0,
-    date: p.date,
-  }));
+  const indexedPurchases = bookPurchases.map((p) => {
+    const cgst = Number(p.cgst) || 0;
+    const sgst = Number(p.sgst) || 0;
+    const igst = Number(p.igst) || 0;
+    const cess = Number(p.cess) || 0;
+    return {
+      raw: p,
+      normGstin: (p.supplierGstin || "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase(),
+      normInv: normalizeInvoiceKey(p.invoiceNumber),
+      normInvPlain: (p.invoiceNumber || "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase(),
+      total: Number(p.total) || 0,
+      tax: { cgst, sgst, igst, cess, totalTax: cgst + sgst + igst + cess },
+      date: p.date,
+    };
+  });
 
   // Iterate over GSTR-2B suppliers
   for (const sup of portalSuppliers || []) {
@@ -154,7 +164,7 @@ export function runGstr2bReconciliation(
         sgst2B += Number(itm.samt) || 0;
         cess2B += Number(itm.csamt) || 0;
       }
-      const twoBTaxTotal = igst2B + cgst2B + sgst2B + cess2B;
+      const twoBTaxTotal = Math.round((igst2B + cgst2B + sgst2B + cess2B) * 100) / 100;
       const timeBarred = isSection16TimeBarred(invDate, refDate);
 
       // --- Tier 1: Exact Match (Same GSTIN + same Plain Invoice Number) ---
@@ -202,14 +212,27 @@ export function runGstr2bReconciliation(
       if (matchedIdx !== -1) {
         const found = indexedPurchases[matchedIdx];
         matchedPurchaseIds.add(found.raw.id);
-        const diff = Math.round(Math.abs(found.total - invVal) * 100) / 100;
+        const valDiff = Math.round(Math.abs(found.total - invVal) * 100) / 100;
+        const taxDiff = Math.round(Math.abs(found.tax.totalTax - twoBTaxTotal) * 100) / 100;
 
         let status: ReconMatchStatus = "EXACT_MATCH";
-        if (matchType === "fuzzy_inum") {
-          status = "FUZZY_MATCH";
-        } else if (diff >= 2.0) {
+        // Check amount and tax discrepancies (statutory tolerance: ₹2.00)
+        if (valDiff >= 2.0 || taxDiff >= 2.0) {
           status = "AMOUNT_MISMATCH";
           matchType = "mismatch_amount";
+        } else if (matchType === "fuzzy_inum") {
+          status = "FUZZY_MATCH";
+        }
+
+        let note: string | undefined = undefined;
+        if (timeBarred) {
+          note = "Section 16(4) time-barred: ITC cannot be claimed past 30th November deadline.";
+        } else if (status === "AMOUNT_MISMATCH") {
+          if (taxDiff >= 2.0 && valDiff < 2.0) {
+            note = `Tax mismatch of ₹${taxDiff.toFixed(2)} (Books: ₹${found.tax.totalTax.toFixed(2)} vs 2B: ₹${twoBTaxTotal.toFixed(2)}).`;
+          } else {
+            note = `Value difference of ₹${valDiff.toFixed(2)} between books and 2B.`;
+          }
         }
 
         records.push({
@@ -221,16 +244,19 @@ export function runGstr2bReconciliation(
           twoBValue: invVal,
           twoBTax: { igst: igst2B, cgst: cgst2B, sgst: sgst2B, cess: cess2B },
           bookValue: found.total,
-          diff,
+          bookTax: {
+            igst: found.tax.igst,
+            cgst: found.tax.cgst,
+            sgst: found.tax.sgst,
+            cess: found.tax.cess,
+          },
+          diff: valDiff,
+          taxDiff,
           status,
           matchType,
           itcAvailable: itcAvl && !timeBarred,
           isTimeBarredSection16: timeBarred,
-          statutoryNote: timeBarred
-            ? "Section 16(4) time-barred: ITC cannot be claimed past 30th November deadline."
-            : status === "AMOUNT_MISMATCH"
-            ? `Value difference of ₹${diff.toFixed(2)} between books and 2B.`
-            : undefined,
+          statutoryNote: note,
           purchaseBillId: found.raw.id,
         });
       } else {
@@ -245,6 +271,7 @@ export function runGstr2bReconciliation(
           twoBTax: { igst: igst2B, cgst: cgst2B, sgst: sgst2B, cess: cess2B },
           bookValue: 0,
           diff: invVal,
+          taxDiff: twoBTaxTotal,
           status: "TWOB_ONLY",
           itcAvailable: itcAvl && !timeBarred,
           isTimeBarredSection16: timeBarred,
@@ -261,10 +288,9 @@ export function runGstr2bReconciliation(
     if (!matchedPurchaseIds.has(p.raw.id)) {
       const timeBarred = isSection16TimeBarred(p.date, refDate);
       const estTax =
-        (Number(p.raw.cgst) || 0) +
-        (Number(p.raw.sgst) || 0) +
-        (Number(p.raw.igst) || 0) ||
-        Math.round(((p.total * 0.18) / 1.18) * 100) / 100;
+        p.tax.totalTax > 0
+          ? p.tax.totalTax
+          : Math.round(((p.total * 0.18) / 1.18) * 100) / 100;
 
       records.push({
         id: `BOOK_${p.raw.id}`,
@@ -275,7 +301,14 @@ export function runGstr2bReconciliation(
         twoBValue: 0,
         twoBTax: { igst: 0, cgst: 0, sgst: 0, cess: 0 },
         bookValue: p.total,
+        bookTax: {
+          igst: p.tax.igst,
+          cgst: p.tax.cgst,
+          sgst: p.tax.sgst,
+          cess: p.tax.cess,
+        },
         diff: p.total,
+        taxDiff: estTax,
         status: "BOOK_ONLY",
         itcAvailable: false,
         isTimeBarredSection16: timeBarred,
@@ -295,20 +328,30 @@ export function runGstr2bReconciliation(
 
   const safeClaimableITC = [...exact, ...fuzzy].reduce(
     (acc, r) =>
-      acc + (r.itcAvailable ? r.twoBTax.igst + r.twoBTax.cgst + r.twoBTax.sgst : 0),
+      acc +
+      (r.itcAvailable
+        ? r.twoBTax.igst + r.twoBTax.cgst + r.twoBTax.sgst + r.twoBTax.cess
+        : 0),
     0
   );
 
   const unclaimedITC = twoBOnly.reduce(
     (acc, r) =>
-      acc + (r.itcAvailable ? r.twoBTax.igst + r.twoBTax.cgst + r.twoBTax.sgst : 0),
+      acc +
+      (r.itcAvailable
+        ? r.twoBTax.igst + r.twoBTax.cgst + r.twoBTax.sgst + r.twoBTax.cess
+        : 0),
     0
   );
 
   const atRiskBookITC = bookOnly.reduce((acc, r) => {
     const raw = bookPurchases.find((b) => b.id === r.purchaseBillId);
     if (raw) {
-      const tax = (Number(raw.cgst) || 0) + (Number(raw.sgst) || 0) + (Number(raw.igst) || 0);
+      const tax =
+        (Number(raw.cgst) || 0) +
+        (Number(raw.sgst) || 0) +
+        (Number(raw.igst) || 0) +
+        (Number(raw.cess) || 0);
       return acc + (tax > 0 ? tax : (r.bookValue * 0.18) / 1.18);
     }
     return acc + (r.bookValue * 0.18) / 1.18;

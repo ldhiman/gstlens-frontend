@@ -172,21 +172,21 @@ export default function ReceiptsPage() {
   const netFlow = totalIn - totalOut;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 pb-20">
+    <div className="min-h-screen bg-[#fafaf9] dark:bg-[#141415] text-slate-900 dark:text-slate-100 pb-20">
       <Header />
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-6">
         {/* Title */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <span className="p-2 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 rounded-2xl border border-indigo-200/60 dark:border-indigo-800/60 shadow-xs">
+            <span className="p-2 bg-emerald-50 dark:bg-emerald-950/40 text-[#047857] dark:text-emerald-400 rounded-xl border border-emerald-200 dark:border-emerald-800/50 shadow-xs">
               <Receipt className="w-6 h-6" />
             </span>
             <div>
-              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+              <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">
                 Payment Vouchers & Receipts
               </h1>
-              <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400">
+              <p className="text-xs md:text-sm text-stone-500 dark:text-stone-400">
                 Record buyer collections, supplier remittances, and auto-settle invoice balances.
               </p>
             </div>
@@ -195,14 +195,14 @@ export default function ReceiptsPage() {
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => openAddModal("out")}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 text-xs font-bold rounded-2xl border border-rose-200/60 dark:border-rose-800/60 transition"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 text-xs font-medium rounded-xl border border-stone-200 dark:border-stone-700 transition"
             >
               <ArrowUpRight className="w-4 h-4" />
               <span>Payment Out (Vendor)</span>
             </button>
             <button
               onClick={() => openAddModal("in")}
-              className="flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-[0.98] text-white text-xs font-bold rounded-2xl shadow-md shadow-emerald-500/20 transition"
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#047857] hover:bg-[#065f46] text-white text-xs font-medium rounded-xl shadow-xs transition"
             >
               <ArrowDownLeft className="w-4 h-4" />
               <span>Payment In (Customer)</span>
@@ -212,78 +212,78 @@ export default function ReceiptsPage() {
 
         {/* Metrics */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-5">
-          <div className="bg-white dark:bg-slate-800/90 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider">
+          <div className="bg-white dark:bg-[#1a1a1c] p-5 rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-xs">
+            <div className="flex items-center justify-between text-stone-400 text-xs font-semibold uppercase tracking-wider">
               <span>Total Collections (Inflow)</span>
-              <span className="p-1.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-xl">
+              <span className="p-1.5 bg-emerald-50 dark:bg-emerald-950/40 text-[#047857] dark:text-emerald-400 rounded-lg">
                 <ArrowDownLeft className="w-4 h-4" />
               </span>
             </div>
-            <p className="text-2xl font-black font-mono tabular-nums text-emerald-600 dark:text-emerald-400 mt-2">
+            <p className="text-2xl font-semibold font-mono tabular-nums text-[#047857] dark:text-emerald-400 mt-2">
               {formatINR(totalIn)}
             </p>
-            <p className="text-[11px] text-slate-400 mt-1">
+            <p className="text-[11px] text-stone-400 mt-1">
               Received from customer receipts
             </p>
           </div>
 
-          <div className="bg-white dark:bg-slate-800/90 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider">
+          <div className="bg-white dark:bg-[#1a1a1c] p-5 rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-xs">
+            <div className="flex items-center justify-between text-stone-400 text-xs font-semibold uppercase tracking-wider">
               <span>Total Payouts (Outflow)</span>
-              <span className="p-1.5 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 rounded-xl">
+              <span className="p-1.5 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 rounded-lg">
                 <ArrowUpRight className="w-4 h-4" />
               </span>
             </div>
-            <p className="text-2xl font-black font-mono tabular-nums text-rose-600 dark:text-rose-400 mt-2">
+            <p className="text-2xl font-semibold font-mono tabular-nums text-rose-600 dark:text-rose-400 mt-2">
               {formatINR(totalOut)}
             </p>
-            <p className="text-[11px] text-slate-400 mt-1">
+            <p className="text-[11px] text-stone-400 mt-1">
               Disbursed to suppliers and vendors
             </p>
           </div>
 
-          <div className="bg-white dark:bg-slate-800/90 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider">
+          <div className="bg-white dark:bg-[#1a1a1c] p-5 rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-xs">
+            <div className="flex items-center justify-between text-stone-400 text-xs font-semibold uppercase tracking-wider">
               <span>Net Cash Inflow</span>
-              <span className="p-1.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 rounded-xl">
+              <span className="p-1.5 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 rounded-lg">
                 <Wallet className="w-4 h-4" />
               </span>
             </div>
             <p
-              className={`text-2xl font-black font-mono tabular-nums mt-2 ${
+              className={`text-2xl font-semibold font-mono tabular-nums mt-2 ${
                 netFlow >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600"
               }`}
             >
               {formatINR(netFlow)}
             </p>
-            <p className="text-[11px] text-slate-400 mt-1">
+            <p className="text-[11px] text-stone-400 mt-1">
               Net balance across bank & cash
             </p>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="bg-white dark:bg-slate-800/90 p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-wrap items-center justify-between gap-3">
+        <div className="bg-white dark:bg-[#1a1a1c] p-3 rounded-xl border border-stone-200/80 dark:border-stone-800 shadow-xs flex flex-wrap items-center justify-between gap-3">
           <div className="flex-1 min-w-[240px] relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search by party name, voucher number or invoice reference..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              className="w-full pl-10 pr-4 py-2.5 bg-[#fafaf9] dark:bg-[#141415] border border-slate-200 dark:border-slate-700/80 rounded-2xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-[#047857]"
             />
           </div>
 
-          <div className="flex bg-slate-100 dark:bg-slate-900/60 p-1 rounded-2xl text-xs font-semibold">
+          <div className="flex bg-stone-100 dark:bg-stone-800/60 p-1 rounded-xl text-xs font-medium border border-stone-200/60 dark:border-stone-800">
             {(["all", "in", "out"] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setTypeFilter(t)}
                 className={`px-3.5 py-1.5 rounded-xl capitalize transition-all ${
                   typeFilter === t
-                    ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs font-bold"
-                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                    ? "bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 shadow-xs border border-stone-200 dark:border-stone-700/60 font-medium"
+                    : "text-stone-600 dark:text-stone-300 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 {t === "all" ? "All Vouchers" : t === "in" ? "Payments In" : "Payments Out"}
@@ -293,16 +293,16 @@ export default function ReceiptsPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white dark:bg-slate-800/90 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
+        <div className="bg-white dark:bg-[#1a1a1c] rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-xs overflow-hidden">
           {filtered.length === 0 ? (
             <div className="py-20 text-center space-y-3 px-4">
-              <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-3xl flex items-center justify-center mx-auto shadow-inner">
+              <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 text-stone-400 rounded-3xl flex items-center justify-center mx-auto shadow-inner">
                 <Receipt className="w-8 h-8" />
               </div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+              <h3 className="text-base font-medium text-stone-900 dark:text-stone-100">
                 No payment vouchers found
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+              <p className="text-xs text-stone-500 dark:text-stone-400 max-w-sm mx-auto leading-relaxed">
                 {search || typeFilter !== "all"
                   ? "No vouchers match your search criteria. Try modifying your filters."
                   : "Record customer collections or supplier payment vouchers to reconcile balances."}
@@ -320,7 +320,7 @@ export default function ReceiptsPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
-                <thead className="bg-slate-50 dark:bg-slate-900/60 text-slate-500 font-bold border-b border-slate-200/80 dark:border-slate-800 uppercase tracking-wider text-[10px]">
+                <thead className="bg-[#fafaf9] dark:bg-[#141415]/60 text-slate-500 font-bold border-b border-slate-200/80 dark:border-slate-800 uppercase tracking-wider text-[10px]">
                   <tr>
                     <th className="py-3.5 px-4">Voucher No</th>
                     <th className="py-3.5 px-4">Date</th>
@@ -332,16 +332,16 @@ export default function ReceiptsPage() {
                     <th className="py-3.5 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                <tbody className="divide-y divide-stone-100 dark:divide-stone-800/80">
                   {filtered.map((r) => (
                     <tr
                       key={r.id}
-                      className="hover:bg-slate-50/70 dark:hover:bg-slate-700/20 transition-colors"
+                      className="hover:bg-stone-50/60 dark:hover:bg-stone-800/40 transition-colors"
                     >
-                      <td className="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-white tabular-nums">
+                      <td className="py-3.5 px-4 font-mono font-medium text-stone-900 dark:text-stone-100 tabular-nums">
                         {r.receiptNo}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400 font-mono tabular-nums">{r.date}</td>
+                      <td className="py-3.5 px-4 text-slate-600 dark:text-stone-400 font-mono tabular-nums">{r.date}</td>
                       <td className="py-3.5 px-4">
                         <span
                           className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase ${
@@ -353,16 +353,16 @@ export default function ReceiptsPage() {
                           {r.type === "in" ? "Payment In" : "Payment Out"}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
+                      <td className="py-3.5 px-4 font-medium text-stone-900 dark:text-stone-100">
                         {r.partyName}
                       </td>
-                      <td className="py-3.5 px-4 font-mono text-slate-600 dark:text-slate-400">
+                      <td className="py-3.5 px-4 font-mono text-slate-600 dark:text-stone-400">
                         {r.againstInvoice || "On Account"}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400">
+                      <td className="py-3.5 px-4 text-slate-600 dark:text-stone-400">
                         <div className="font-semibold">{r.paymentMode}</div>
                         {r.referenceNo && (
-                          <div className="font-mono text-[10px] text-slate-400 dark:text-slate-500">Ref: {r.referenceNo}</div>
+                          <div className="font-mono text-[10px] text-stone-400 dark:text-slate-500">Ref: {r.referenceNo}</div>
                         )}
                       </td>
                       <td
@@ -386,7 +386,7 @@ export default function ReceiptsPage() {
                           <button
                             onClick={() => handleDelete(r.id)}
                             title="Delete Voucher"
-                            className="p-2 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-600 rounded-xl transition"
+                            className="p-2 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-stone-400 hover:text-rose-600 rounded-xl transition"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -404,14 +404,14 @@ export default function ReceiptsPage() {
       {/* Add Receipt Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-lg p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+          <div className="bg-white dark:bg-[#1a1a1c] rounded-2xl w-full max-w-lg p-6 shadow-xl border border-stone-200/80 dark:border-stone-800 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b border-stone-100 dark:border-stone-800">
+              <h3 className="text-base font-medium text-stone-900 dark:text-stone-100">
                 {type === "in" ? "Record Payment Received (Inflow)" : "Record Payment Made (Outflow)"}
               </h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-400 hover:text-slate-600"
+                className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-stone-400 hover:text-slate-600"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -428,7 +428,7 @@ export default function ReceiptsPage() {
                     required
                     value={receiptNo}
                     onChange={(e) => setReceiptNo(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#047857]"
                   />
                 </div>
 
@@ -441,7 +441,7 @@ export default function ReceiptsPage() {
                     required
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#047857]"
                   />
                 </div>
 
@@ -456,7 +456,7 @@ export default function ReceiptsPage() {
                     value={partyName}
                     onChange={(e) => setPartyName(e.target.value)}
                     list="partyList"
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl font-semibold text-xs focus:outline-none focus:ring-1 focus:ring-[#047857]"
                   />
                   <datalist id="partyList">
                     {clients.map((c) => (
@@ -477,7 +477,7 @@ export default function ReceiptsPage() {
                     placeholder="0.00"
                     value={amount}
                     onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono font-bold text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl font-mono font-bold text-xs focus:outline-none focus:ring-1 focus:ring-[#047857]"
                   />
                 </div>
 
@@ -488,7 +488,7 @@ export default function ReceiptsPage() {
                   <select
                     value={paymentMode}
                     onChange={(e) => setPaymentMode(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[#047857]"
                   >
                     <option value="Bank Transfer">Bank Transfer / NEFT / IMPS</option>
                     <option value="UPI">UPI / QR Code</option>
@@ -507,7 +507,7 @@ export default function ReceiptsPage() {
                     placeholder="UTR / UPI Ref / Cheque No"
                     value={referenceNo}
                     onChange={(e) => setReferenceNo(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#047857]"
                   />
                 </div>
 
@@ -521,7 +521,7 @@ export default function ReceiptsPage() {
                     value={againstInvoice}
                     onChange={(e) => setAgainstInvoice(e.target.value)}
                     list="invoiceList"
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#047857]"
                   />
                   <datalist id="invoiceList">
                     {invoices.map((inv) => (
@@ -539,16 +539,16 @@ export default function ReceiptsPage() {
                     placeholder="e.g. Advance for Q4 retainer"
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-[#047857]"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex justify-end gap-2 pt-4 border-t border-stone-100 dark:border-stone-800">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 transition"
+                  className="px-3.5 py-2 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-xl text-xs font-medium text-stone-700 dark:text-stone-300 transition"
                 >
                   Cancel
                 </button>
@@ -572,20 +572,20 @@ export default function ReceiptsPage() {
       {previewReceipt && profile && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-lg p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+            <div className="flex items-center justify-between pb-2 border-b border-stone-100 dark:border-stone-800">
+              <h3 className="text-sm font-medium text-stone-900 dark:text-stone-100">
                 Payment Voucher Slip
               </h3>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => window.print()}
-                  className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
+                  className="px-3 py-1 bg-[#047857] hover:bg-[#065f46] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
                 >
                   <Printer className="w-3.5 h-3.5" /> Print Slip
                 </button>
                 <button
                   onClick={() => setPreviewReceipt(null)}
-                  className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-400"
+                  className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-stone-400"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -608,11 +608,11 @@ export default function ReceiptsPage() {
 
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div>
-                  <span className="text-slate-400 font-semibold block">Voucher No:</span>
+                  <span className="text-stone-400 font-semibold block">Voucher No:</span>
                   <span className="font-mono font-bold">{previewReceipt.receiptNo}</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-slate-400 font-semibold block">Date:</span>
+                  <span className="text-stone-400 font-semibold block">Date:</span>
                   <span className="font-mono">{previewReceipt.date}</span>
                 </div>
               </div>
@@ -643,7 +643,7 @@ export default function ReceiptsPage() {
               </div>
 
               <div className="pt-4 flex justify-between items-end border-t border-slate-200 text-[10px]">
-                <span className="text-slate-400 italic">Generated by GSTLens</span>
+                <span className="text-stone-400 italic">Generated by GSTLens</span>
                 <div className="text-right space-y-6">
                   <p className="text-slate-600">For {profile.businessName}</p>
                   <p className="font-bold text-slate-900 border-t border-slate-400 pt-1">
@@ -670,11 +670,11 @@ export default function ReceiptsPage() {
 
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>
-                    <span className="text-slate-400 font-semibold block">Voucher No:</span>
+                    <span className="text-stone-400 font-semibold block">Voucher No:</span>
                     <span className="font-mono font-bold">{previewReceipt.receiptNo}</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-slate-400 font-semibold block">Date:</span>
+                    <span className="text-stone-400 font-semibold block">Date:</span>
                     <span className="font-mono">{previewReceipt.date}</span>
                   </div>
                 </div>
@@ -705,7 +705,7 @@ export default function ReceiptsPage() {
                 </div>
 
                 <div className="pt-4 flex justify-between items-end border-t border-slate-200 text-[10px]">
-                  <span className="text-slate-400 italic">Generated by GSTLens</span>
+                  <span className="text-stone-400 italic">Generated by GSTLens</span>
                   <div className="text-right space-y-6">
                     <p className="text-slate-600">For {profile.businessName}</p>
                     <p className="font-bold text-slate-900 border-t border-slate-400 pt-1">

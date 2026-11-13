@@ -383,6 +383,24 @@ export function getLocalToday(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+export function formatLastModified(isoOrMs?: string | number): string {
+  if (!isoOrMs) return "—";
+  try {
+    const d = new Date(isoOrMs);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch {
+    return "—";
+  }
+}
+
 /* ---------------- Line Item Tax Computation ---------------- */
 
 export interface LineItem {

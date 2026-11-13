@@ -4,12 +4,11 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   FileText,
-  FileCheck,
+  Users,
   Settings,
   Camera,
   UploadCloud,
   X,
-  Sparkles,
   ShoppingCart,
 } from "lucide-react";
 import { useState, useRef } from "react";
@@ -27,7 +26,6 @@ export default function BottomNav() {
     const file = e.target.files?.[0];
     if (file) {
       setSheetOpen(false);
-      // Dispatch global file event for the dashboard or active view
       const event = new CustomEvent("DIRECT_FILE_SELECT", { detail: file });
       window.dispatchEvent(event);
 
@@ -44,56 +42,52 @@ export default function BottomNav() {
       {sheetOpen && (
         <div className="fixed inset-0 z-50 md:hidden flex flex-col justify-end">
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-xs animate-fade-in"
+            className="absolute inset-0 bg-stone-950/40 backdrop-blur-xs"
             onClick={() => setSheetOpen(false)}
           />
 
-          <div className="relative bg-white dark:bg-slate-900 rounded-t-3xl p-6 shadow-2xl border-t border-slate-200 dark:border-slate-800 animate-slide-up z-10 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-                    Process New Invoice
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    AI auto-extracts GSTIN, amounts & taxes
-                  </p>
-                </div>
+          <div className="relative bg-[#fafaf9] dark:bg-[#161513] rounded-t-2xl p-5 shadow-xl border-t border-black/[0.08] dark:border-white/[0.08] z-10 space-y-3">
+            <div className="flex items-center justify-between pb-2.5 border-b border-black/[0.06] dark:border-white/[0.06]">
+              <div>
+                <h3 className="font-medium text-stone-900 dark:text-stone-100 text-sm">
+                  Add invoice or bill
+                </h3>
+                <p className="text-xs text-stone-500 dark:text-stone-400">
+                  Extract GSTIN, item lines, and statutory tax breakdown
+                </p>
               </div>
               <button
                 onClick={() => setSheetOpen(false)}
-                className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400"
+                className="p-1 rounded-md text-stone-400 hover:text-stone-700 dark:hover:text-stone-200"
+                aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="space-y-2.5 pt-1">
+            <div className="space-y-2 pt-1">
               {/* Option 1: Sales Invoice */}
-              <div className="p-3 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-2xl border border-indigo-100 dark:border-indigo-900/60 flex items-center justify-between">
+              <div className="p-3 bg-white dark:bg-[#1c1a18] rounded-xl border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
-                    <FileText className="w-5 h-5" />
+                  <div className="w-8 h-8 rounded-lg bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 flex items-center justify-center">
+                    <FileText className="w-4 h-4" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">Sales Invoice</h4>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">Scan customer outward bill</p>
+                    <h4 className="text-xs font-medium text-stone-900 dark:text-stone-100">Sales invoice</h4>
+                    <p className="text-[11px] text-stone-500 dark:text-stone-400">Scan customer outward bill</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => cameraInputRef.current?.click()}
-                    className="p-2 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs hover:bg-slate-50 active:scale-95 transition"
+                    className="p-1.5 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 rounded-md border border-black/[0.06] dark:border-white/[0.06]"
                     title="Camera capture"
                   >
                     <Camera className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="p-2 bg-indigo-600 text-white rounded-xl shadow-2xs hover:bg-indigo-700 active:scale-95 transition"
+                    className="p-1.5 bg-emerald-700 text-white rounded-md hover:bg-emerald-800"
                     title="Upload file"
                   >
                     <UploadCloud className="w-4 h-4" />
@@ -102,14 +96,14 @@ export default function BottomNav() {
               </div>
 
               {/* Option 2: Purchase Bill */}
-              <div className="p-3 bg-emerald-50/70 dark:bg-emerald-950/40 rounded-2xl border border-emerald-100 dark:border-emerald-900/60 flex items-center justify-between">
+              <div className="p-3 bg-white dark:bg-[#1c1a18] rounded-xl border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
-                    <ShoppingCart className="w-5 h-5" />
+                  <div className="w-8 h-8 rounded-lg bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 flex items-center justify-center">
+                    <ShoppingCart className="w-4 h-4" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">Purchase Bill</h4>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">Scan vendor bill for ITC</p>
+                    <h4 className="text-xs font-medium text-stone-900 dark:text-stone-100">Purchase bill</h4>
+                    <p className="text-[11px] text-stone-500 dark:text-stone-400">Scan vendor bill for ITC claims</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -118,7 +112,7 @@ export default function BottomNav() {
                       setSheetOpen(false);
                       router.push("/purchases?scan=camera");
                     }}
-                    className="p-2 bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs hover:bg-slate-50 active:scale-95 transition"
+                    className="p-1.5 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 rounded-md border border-black/[0.06] dark:border-white/[0.06]"
                     title="Camera capture"
                   >
                     <Camera className="w-4 h-4" />
@@ -128,7 +122,7 @@ export default function BottomNav() {
                       setSheetOpen(false);
                       router.push("/purchases?scan=file");
                     }}
-                    className="p-2 bg-emerald-600 text-white rounded-xl shadow-2xs hover:bg-emerald-700 active:scale-95 transition"
+                    className="p-1.5 bg-emerald-700 text-white rounded-md hover:bg-emerald-800"
                     title="Upload file"
                   >
                     <UploadCloud className="w-4 h-4" />
@@ -160,74 +154,74 @@ export default function BottomNav() {
       {/* Persistent Bottom Bar */}
       <nav
         id="tour-bottom-nav"
-        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800 px-2 pb-safe transition-colors"
+        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#fafaf9]/95 dark:bg-[#12110f]/95 backdrop-blur-md border-t border-black/[0.08] dark:border-white/[0.08] px-2 pb-safe transition-colors"
       >
-        <div className="flex items-center justify-around h-16 relative">
+        <div className="flex items-center justify-around h-14 relative">
           {/* Dashboard */}
           <button
             onClick={() => router.push("/dashboard")}
-            className={`flex flex-col items-center justify-center w-14 h-full transition-colors ${
+            className={`flex flex-col items-center justify-center w-12 h-full transition-colors ${
               isActive("/dashboard")
-                ? "text-blue-600 dark:text-blue-400 font-semibold"
-                : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                ? "text-emerald-700 dark:text-emerald-400 font-medium"
+                : "text-stone-400 dark:text-stone-500 hover:text-stone-800 dark:hover:text-stone-200"
             }`}
           >
-            <LayoutDashboard className="w-5 h-5" />
-            <span className="text-[10px] mt-1 font-medium">Home</span>
+            <LayoutDashboard className="w-4 h-4" />
+            <span className="text-[10px] mt-1">Home</span>
           </button>
 
           {/* Invoices */}
           <button
             onClick={() => router.push("/invoices")}
-            className={`flex flex-col items-center justify-center w-14 h-full transition-colors ${
+            className={`flex flex-col items-center justify-center w-12 h-full transition-colors ${
               isActive("/invoices")
-                ? "text-blue-600 dark:text-blue-400 font-semibold"
-                : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                ? "text-emerald-700 dark:text-emerald-400 font-medium"
+                : "text-stone-400 dark:text-stone-500 hover:text-stone-800 dark:hover:text-stone-200"
             }`}
           >
-            <FileText className="w-5 h-5" />
-            <span className="text-[10px] mt-1 font-medium">Invoices</span>
+            <FileText className="w-4 h-4" />
+            <span className="text-[10px] mt-1">Invoices</span>
           </button>
 
           {/* Scan Center Button */}
-          <div className="relative -top-5 flex flex-col items-center">
+          <div className="relative -top-4 flex flex-col items-center">
             <button
               id="tour-scan-button"
               onClick={() => setSheetOpen(true)}
-              aria-label="Scan or Upload Invoice"
-              className="w-14 h-14 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-emerald-500 text-white shadow-lg shadow-blue-500/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-all ring-4 ring-white dark:ring-slate-950"
+              aria-label="Scan or upload invoice"
+              className="w-12 h-12 rounded-full bg-emerald-700 text-white shadow-sm flex items-center justify-center transition-colors ring-4 ring-[#fafaf9] dark:ring-[#12110f] hover:bg-emerald-800"
             >
-              <Camera className="w-6 h-6" />
+              <Camera className="w-5 h-5" />
             </button>
-            <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 mt-1">
-              AI Scan
+            <span className="text-[10px] font-medium text-stone-600 dark:text-stone-300 mt-1">
+              Scan bill
             </span>
           </div>
 
           {/* Parties */}
           <button
             onClick={() => router.push("/clients")}
-            className={`flex flex-col items-center justify-center w-14 h-full transition-colors ${
+            className={`flex flex-col items-center justify-center w-12 h-full transition-colors ${
               isActive("/clients")
-                ? "text-blue-600 dark:text-blue-400 font-semibold"
-                : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                ? "text-emerald-700 dark:text-emerald-400 font-medium"
+                : "text-stone-400 dark:text-stone-500 hover:text-stone-800 dark:hover:text-stone-200"
             }`}
           >
-            <FileCheck className="w-5 h-5" />
-            <span className="text-[10px] mt-1 font-medium">Parties</span>
+            <Users className="w-4 h-4" />
+            <span className="text-[10px] mt-1">Parties</span>
           </button>
 
           {/* Settings */}
           <button
             onClick={() => router.push("/settings")}
-            className={`flex flex-col items-center justify-center w-14 h-full transition-colors ${
+            className={`flex flex-col items-center justify-center w-12 h-full transition-colors ${
               isActive("/settings")
-                ? "text-blue-600 dark:text-blue-400 font-semibold"
-                : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                ? "text-emerald-700 dark:text-emerald-400 font-medium"
+                : "text-stone-400 dark:text-stone-500 hover:text-stone-800 dark:hover:text-stone-200"
             }`}
           >
-            <Settings className="w-5 h-5" />
-            <span className="text-[10px] mt-1 font-medium">Settings</span>
+            <Settings className="w-4 h-4" />
+            <span className="text-[10px] mt-1">Settings</span>
           </button>
         </div>
       </nav>

@@ -11,6 +11,7 @@ import {
   X,
   CheckCircle,
 } from "lucide-react";
+import { isSandboxModeActive } from "@/lib/sandboxData";
 
 export type TourStep = {
   targetId?: string;
@@ -23,39 +24,39 @@ export type TourStep = {
 
 const TOUR_STEPS: TourStep[] = [
   {
-    title: "Welcome to GSTLens! 🚀",
+    title: "Welcome to GSTLens",
     description:
       "Your intelligent GST compliance companion. Snap invoice photos or upload PDFs to extract GSTINs, tax slabs, and amounts instantly with AI.",
     icon: Sparkles,
     position: "center",
-    badge: "10 Free Credits Ready",
+    badge: "10 free credits ready",
   },
   {
     targetId: "tour-scan-zone",
-    title: "1. Scan or Upload Invoice",
+    title: "1. Scan or upload invoice",
     description:
       "Tap the Camera / Scan button on mobile or drag and drop PDFs/images on desktop. Our system processes bills in under 5 seconds.",
     icon: Camera,
     position: "bottom",
-    badge: "Instant AI Extraction",
+    badge: "Instant AI extraction",
   },
   {
     targetId: "tour-invoice-list",
-    title: "2. Review & Auto-Correction",
+    title: "2. Review & auto-correction",
     description:
       "Verify extracted data, check auto-calculated CGST/SGST/IGST sanity checks, and lookup live taxpayer registration details with 1 click.",
     icon: FileCheck2,
     position: "top",
-    badge: "Built-in Tax Checks",
+    badge: "Built-in tax checks",
   },
   {
     targetId: "tour-returns-link",
-    title: "3. One-Click Government Returns",
+    title: "3. One-click government returns",
     description:
-      "Generate fully compliant GSTR-1 & GSTR-3B JSON files formatted for the official GST Portal offline tool. No manual data entry ever again!",
+      "Generate fully compliant GSTR-1 & GSTR-3B JSON files formatted for the official GST Portal offline tool. No manual data entry ever again.",
     icon: DownloadCloud,
     position: "bottom",
-    badge: "GST Portal Ready",
+    badge: "GST portal ready",
   },
 ];
 
@@ -67,10 +68,8 @@ export default function OnboardingTour() {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
 
   useEffect(() => {
-    // Check if user has already seen the tour
     const seen = localStorage.getItem(TOUR_STORAGE_KEY);
-    if (!seen) {
-      // Short delay for initial UI render
+    if (!seen && !isSandboxModeActive()) {
       const timer = setTimeout(() => {
         setIsOpen(true);
       }, 1200);
@@ -78,7 +77,6 @@ export default function OnboardingTour() {
     }
   }, []);
 
-  // Listen for manual tour restart events
   useEffect(() => {
     const handleRestart = () => {
       setCurrentStep(0);
@@ -88,7 +86,6 @@ export default function OnboardingTour() {
     return () => window.removeEventListener("RESTART_TOUR", handleRestart);
   }, []);
 
-  // Update spotlight target positioning
   useEffect(() => {
     if (!isOpen) return;
 
@@ -138,16 +135,16 @@ export default function OnboardingTour() {
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden select-none">
-      {/* Dimmed backdrop - unblurred for crystal clear UI visibility */}
+      {/* Dimmed backdrop */}
       <div
-        className="absolute inset-0 bg-slate-950/50 transition-opacity duration-300"
+        className="absolute inset-0 bg-stone-950/60 transition-opacity duration-300"
         onClick={handleComplete}
       />
 
       {/* Target Spotlight Highlight Ring */}
       {targetRect && (
         <div
-          className="absolute border-2 border-indigo-400 bg-indigo-500/10 rounded-2xl pointer-events-none transition-all duration-300 shadow-[0_0_40px_rgba(99,102,241,0.5)] animate-pulse"
+          className="absolute border-2 border-[#047857] bg-emerald-500/10 rounded-2xl pointer-events-none transition-all duration-300 shadow-[0_0_25px_rgba(4,120,87,0.35)]"
           style={{
             top: `${Math.max(8, targetRect.top - 8)}px`,
             left: `${Math.max(8, targetRect.left - 8)}px`,
@@ -159,20 +156,20 @@ export default function OnboardingTour() {
 
       {/* Tour Dialog Card */}
       <div className="fixed inset-0 flex items-center justify-center p-4 pointer-events-none">
-        <div className="relative pointer-events-auto bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 animate-scale-in">
+        <div className="relative pointer-events-auto bg-white dark:bg-[#161513] text-stone-900 dark:text-stone-100 rounded-2xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-stone-200/80 dark:border-white/[0.08] animate-scale-in">
           {/* Header */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                <StepIcon className="w-6 h-6" />
+              <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 text-[#047857] dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <StepIcon className="w-5 h-5" />
               </div>
               <div>
                 {step.badge && (
-                  <span className="inline-block text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100 mb-1">
+                  <span className="inline-block text-[10px] font-bold text-[#047857] dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/40 mb-1">
                     {step.badge}
                   </span>
                 )}
-                <h3 className="font-bold text-slate-900 text-lg leading-tight">
+                <h3 className="font-bold text-stone-900 dark:text-stone-100 text-base leading-tight">
                   {step.title}
                 </h3>
               </div>
@@ -180,29 +177,29 @@ export default function OnboardingTour() {
 
             <button
               onClick={handleComplete}
-              className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition"
+              className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition"
               aria-label="Skip tour"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
 
           {/* Description */}
-          <p className="text-sm text-slate-600 leading-relaxed mb-6">
+          <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed mb-6">
             {step.description}
           </p>
 
           {/* Progress & Navigation Bar */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+          <div className="flex items-center justify-between pt-4 border-t border-stone-100 dark:border-stone-800">
             {/* Dots */}
             <div className="flex items-center gap-1.5">
               {TOUR_STEPS.map((_, idx) => (
                 <div
                   key={idx}
-                  className={`h-2 rounded-full transition-all duration-300 ${
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
                     idx === currentStep
-                      ? "w-6 bg-indigo-600"
-                      : "w-2 bg-slate-200"
+                      ? "w-5 bg-[#047857]"
+                      : "w-1.5 bg-stone-200 dark:bg-stone-700"
                   }`}
                 />
               ))}
@@ -213,23 +210,23 @@ export default function OnboardingTour() {
               {!isFirst && (
                 <button
                   onClick={handlePrev}
-                  className="px-3 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold flex items-center gap-1 active:scale-95 transition"
+                  className="px-3 py-2 rounded-xl border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 text-xs font-semibold flex items-center gap-1 active:scale-95 transition cursor-pointer"
                 >
-                  <ChevronLeft className="w-4 h-4" /> Back
+                  <ChevronLeft className="w-3.5 h-3.5" /> Back
                 </button>
               )}
 
               <button
                 onClick={handleNext}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-indigo-500/25 active:scale-95 transition"
+                className="px-4 py-2 rounded-xl bg-[#047857] hover:bg-[#065f46] text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm active:scale-95 transition cursor-pointer"
               >
                 {isLast ? (
                   <>
-                    <CheckCircle className="w-4 h-4" /> Get Started
+                    <CheckCircle className="w-3.5 h-3.5" /> Get started
                   </>
                 ) : (
                   <>
-                    Next <ChevronRight className="w-4 h-4" />
+                    Next <ChevronRight className="w-3.5 h-3.5" />
                   </>
                 )}
               </button>

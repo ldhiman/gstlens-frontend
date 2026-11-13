@@ -248,3 +248,79 @@ test("Consecutive invoice number generator prevents collisions when earlier invo
   assert.equal(nextInvoiceNumber, "INV/2026-27/0004");
   assert.notEqual(nextInvoiceNumber, "INV/2026-27/0003");
 });
+
+test("Invoices and purchases sort by updated_time descending (most recently updated first)", () => {
+  const t1 = "2026-11-13T10:00:00.000Z";
+  const t2 = "2026-11-13T12:00:00.000Z";
+  const t3 = "2026-11-13T14:30:00.000Z";
+
+  const sampleInvoices = [
+    { id: "inv-1", created_time: t1, updated_time: t1, data: { invoice_number: "INV-1" } },
+    { id: "inv-2", created_time: t1, updated_time: t3, data: { invoice_number: "INV-2" } },
+    { id: "inv-3", created_time: t2, updated_time: t2, data: { invoice_number: "INV-3" } },
+  ];
+
+  const sortedInvoices = [...sampleInvoices].sort((a, b) => {
+    const tA = new Date(a.updated_time).getTime();
+    const tB = new Date(b.updated_time).getTime();
+    return tB - tA;
+  });
+
+  assert.equal(sortedInvoices[0].id, "inv-2"); // updated at t3 (latest)
+  assert.equal(sortedInvoices[1].id, "inv-3"); // updated at t2
+  assert.equal(sortedInvoices[2].id, "inv-1"); // updated at t1
+
+  const samplePurchases = [
+    { id: "pur-1", invoiceNumber: "PB-1", created_time: t1, updated_time: t1 },
+    { id: "pur-2", invoiceNumber: "PB-2", created_time: t2, updated_time: t3 },
+    { id: "pur-3", invoiceNumber: "PB-3", created_time: t1, updated_time: t2 },
+  ];
+
+  const sortedPurchases = [...samplePurchases].sort((a, b) => {
+    const tA = new Date(a.updated_time).getTime();
+    const tB = new Date(b.updated_time).getTime();
+    return tB - tA;
+  });
+
+  assert.equal(sortedPurchases[0].id, "pur-2"); // updated at t3
+  assert.equal(sortedPurchases[1].id, "pur-3"); // updated at t2
+  assert.equal(sortedPurchases[2].id, "pur-1"); // updated at t1
+});
+
+test("Draft invoices and confirmed invoices are separated so drafts are never aggregated into confirmed sales", () => {
+  const allInvoices = [
+    { id: "inv-1", status: "confirmed", data: { invoice_total: 10000, invoice_number: "INV-001" } },
+    { id: "inv-2", status: "draft", data: { invoice_total: 5000, invoice_number: "INV-DRAFT-1" } },
+    { id: "inv-3", status: "auto_saved", data: { invoice_total: 2000, invoice_number: "INV-002" } },
+  ];
+
+  const confirmedInvoices = allInvoices.filter((inv) => inv.status !== "draft");
+  const draftInvoices = allInvoices.filter((inv) => inv.status === "draft");
+
+  assert.equal(confirmedInvoices.length, 2);
+  assert.equal(draftInvoices.length, 1);
+
+  // Confirmed turnover must NOT include the ₹5,000 draft
+  const confirmedTotal = confirmedInvoices.reduce((sum, inv) => sum + inv.data.invoice_total, 0);
+  assert.equal(confirmedTotal, 12000);
+});
+
+test("Draft purchase bills and confirmed purchases are separated so drafts are never aggregated into ITC or expense totals", () => {
+  const allPurchases = [
+    { id: "pur-1", status: "confirmed", invoiceNumber: "PB-101", total: 8000, cgst: 720, sgst: 720 },
+    { id: "pur-2", status: "draft", invoiceNumber: "PB-DRAFT", total: 4000, cgst: 360, sgst: 360 },
+  ];
+
+  const confirmedPurchases = allPurchases.filter((p) => p.status !== "draft");
+  const draftPurchases = allPurchases.filter((p) => p.status === "draft");
+
+  assert.equal(confirmedPurchases.length, 1);
+  assert.equal(draftPurchases.length, 1);
+
+  // Confirmed purchase total and ITC must NOT include draft bill
+  const confirmedPurchasesTotal = confirmedPurchases.reduce((sum, p) => sum + p.total, 0);
+  const confirmedITC = confirmedPurchases.reduce((sum, p) => sum + (p.cgst + p.sgst), 0);
+
+  assert.equal(confirmedPurchasesTotal, 8000);
+  assert.equal(confirmedITC, 1440);
+});

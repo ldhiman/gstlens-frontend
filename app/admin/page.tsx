@@ -308,7 +308,7 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-[#141415] text-stone-100 flex flex-col">
       {/* Toast Notification */}
       {notification && (
         <div
@@ -328,19 +328,19 @@ export default function AdminDashboardPage() {
       )}
 
       {/* Top Navbar */}
-      <header className="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 sm:px-8 py-3.5 flex items-center justify-between">
+      <header className="sticky top-0 z-30 bg-[#141415]/90 backdrop-blur-md border-b border-stone-800 px-4 sm:px-8 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shadow-xs">
+          <div className="w-9 h-9 rounded-xl bg-[#047857] text-white flex items-center justify-center font-bold shadow-xs">
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="font-bold text-base text-white">GSTLens</span>
-              <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700">
+              <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-md bg-[#1a1a1c] text-stone-300 border border-stone-700">
                 Admin
               </span>
             </div>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-stone-400">
               User &amp; Custom Subscription Management
             </p>
           </div>
@@ -353,18 +353,18 @@ export default function AdminDashboardPage() {
               loadData();
             }}
             disabled={refreshing}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition text-xs flex items-center gap-1.5 border border-slate-700"
+            className="p-2 rounded-xl bg-[#1a1a1c] hover:bg-slate-700 text-stone-300 hover:text-white transition text-xs flex items-center gap-1.5 border border-stone-700"
             title="Refresh Data"
           >
             <RefreshCw
-              className={`w-4 h-4 ${refreshing ? "animate-spin text-indigo-400" : ""}`}
+              className={`w-4 h-4 ${refreshing ? "animate-spin text-emerald-400" : ""}`}
             />
             <span className="hidden sm:inline">Refresh</span>
           </button>
 
           <button
             onClick={handleLogout}
-            className="py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-400 border border-slate-700 hover:border-slate-600 transition text-xs flex items-center gap-1.5 font-medium"
+            className="py-1.5 px-3 rounded-xl bg-[#1a1a1c] hover:bg-slate-700 text-rose-400 border border-stone-700 hover:border-slate-600 transition text-xs flex items-center gap-1.5 font-medium"
           >
             <LogOut className="w-4 h-4" />
             <span>Logout</span>
@@ -376,23 +376,23 @@ export default function AdminDashboardPage() {
       <main className="flex-1 px-4 sm:px-8 py-6 max-w-7xl w-full mx-auto space-y-6">
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 shadow-xs">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
+          <div className="bg-[#1a1a1c]/80 border border-stone-700/80 rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between text-stone-400 mb-2">
               <span className="text-xs font-semibold uppercase tracking-wider">
                 Total Users
               </span>
-              <Users className="w-4 h-4 text-slate-400" />
+              <Users className="w-4 h-4 text-stone-400" />
             </div>
             <div className="text-2xl font-bold font-mono text-white">
               {stats?.total_users ?? "—"}
             </div>
-            <div className="text-[11px] text-slate-400 mt-1">
+            <div className="text-[11px] text-stone-400 mt-1">
               {stats?.verified_gstin_count ?? 0} GSTIN-verified
             </div>
           </div>
 
-          <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 shadow-xs">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
+          <div className="bg-[#1a1a1c]/80 border border-stone-700/80 rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between text-stone-400 mb-2">
               <span className="text-xs font-semibold uppercase tracking-wider">
                 Active Subscribers
               </span>
@@ -401,28 +401,28 @@ export default function AdminDashboardPage() {
             <div className="text-2xl font-bold font-mono text-emerald-400">
               {stats?.active_subscriptions ?? "—"}
             </div>
-            <div className="text-[11px] text-slate-400 mt-1">
+            <div className="text-[11px] text-stone-400 mt-1">
               Pro &amp; Custom Deals
             </div>
           </div>
 
-          <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 shadow-xs">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
+          <div className="bg-[#1a1a1c]/80 border border-stone-700/80 rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between text-stone-400 mb-2">
               <span className="text-xs font-semibold uppercase tracking-wider">
                 Custom Deals
               </span>
-              <Sparkles className="w-4 h-4 text-indigo-400" />
+              <Sparkles className="w-4 h-4 text-emerald-400" />
             </div>
-            <div className="text-2xl font-bold font-mono text-indigo-300">
+            <div className="text-2xl font-bold font-mono text-emerald-300">
               {stats?.custom_subscriptions ?? "—"}
             </div>
-            <div className="text-[11px] text-slate-400 mt-1">
+            <div className="text-[11px] text-stone-400 mt-1">
               Admin Managed
             </div>
           </div>
 
-          <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 shadow-xs">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
+          <div className="bg-[#1a1a1c]/80 border border-stone-700/80 rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between text-stone-400 mb-2">
               <span className="text-xs font-semibold uppercase tracking-wider">
                 Platform Credits
               </span>
@@ -431,23 +431,23 @@ export default function AdminDashboardPage() {
             <div className="text-2xl font-bold font-mono text-amber-300">
               {stats?.total_platform_credits?.toLocaleString("en-IN") ?? "—"}
             </div>
-            <div className="text-[11px] text-slate-400 mt-1">
+            <div className="text-[11px] text-stone-400 mt-1">
               Total AI scan balances
             </div>
           </div>
         </div>
 
         {/* Search & Filter Toolbar */}
-        <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="bg-[#1a1a1c]/80 border border-stone-700/80 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
           {/* Search Box */}
           <div className="relative w-full md:w-96">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
             <input
               type="text"
               placeholder="Search by email, name, GSTIN, or UID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              className="w-full pl-10 pr-4 py-2 bg-[#141415] border border-stone-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#047857]/20"
             />
           </div>
 
@@ -465,8 +465,8 @@ export default function AdminDashboardPage() {
                 onClick={() => setFilterMode(f.id)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
                   filterMode === f.id
-                    ? "bg-indigo-600 text-white shadow-xs"
-                    : "bg-slate-900 text-slate-400 hover:text-white border border-slate-700/60"
+                    ? "bg-[#047857] text-white shadow-xs"
+                    : "bg-[#141415] text-stone-400 hover:text-white border border-stone-700/60"
                 }`}
               >
                 {f.label}
@@ -476,10 +476,10 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Users Table */}
-        <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl overflow-hidden shadow-xl">
+        <div className="bg-[#1a1a1c]/80 border border-stone-700/80 rounded-2xl overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-slate-900/70 border-b border-slate-700/80 text-slate-400 text-xs uppercase tracking-wider">
+              <thead className="bg-[#141415]/70 border-b border-stone-700/80 text-stone-400 text-xs uppercase tracking-wider">
                 <tr>
                   <th className="py-3.5 px-4 font-semibold">User Details</th>
                   <th className="py-3.5 px-4 font-semibold">Business / GSTIN</th>
@@ -497,19 +497,19 @@ export default function AdminDashboardPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/60 text-slate-300">
+              <tbody className="divide-y divide-slate-700/60 text-stone-300">
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-slate-400">
+                    <td colSpan={6} className="py-12 text-center text-stone-400">
                       <div className="inline-flex items-center gap-2">
-                        <RefreshCw className="w-5 h-5 animate-spin text-indigo-400" />
+                        <RefreshCw className="w-5 h-5 animate-spin text-emerald-400" />
                         <span>Loading users from database...</span>
                       </div>
                     </td>
                   </tr>
                 ) : users.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-slate-400">
+                    <td colSpan={6} className="py-12 text-center text-stone-400">
                       No users found matching your criteria.
                     </td>
                   </tr>
@@ -527,7 +527,7 @@ export default function AdminDashboardPage() {
                         {/* User Identity */}
                         <td className="py-4 px-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center text-indigo-300 font-bold text-sm overflow-hidden flex-shrink-0">
+                            <div className="w-9 h-9 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center text-emerald-300 font-bold text-sm overflow-hidden flex-shrink-0">
                               {user.photoURL ? (
                                 <img
                                   src={user.photoURL}
@@ -542,12 +542,12 @@ export default function AdminDashboardPage() {
                               <div className="font-semibold text-white truncate max-w-[200px]">
                                 {user.name || "Unnamed User"}
                               </div>
-                              <div className="text-xs text-slate-400 truncate max-w-[220px]">
+                              <div className="text-xs text-stone-400 truncate max-w-[220px]">
                                 {user.email || "No email"}
                               </div>
                               <button
                                 onClick={() => handleCopy(user.uid)}
-                                className="text-[10px] text-slate-500 hover:text-slate-300 flex items-center gap-1 font-mono mt-0.5"
+                                className="text-[10px] text-stone-500 hover:text-stone-300 flex items-center gap-1 font-mono mt-0.5"
                                 title="Click to copy UID"
                               >
                                 <span>{user.uid.slice(0, 10)}...</span>
@@ -565,7 +565,7 @@ export default function AdminDashboardPage() {
                         <td className="py-4 px-4">
                           {user.primary_gstin ? (
                             <div>
-                              <div className="font-mono text-xs text-slate-200 font-medium">
+                              <div className="font-mono text-xs text-stone-200 font-medium">
                                 {user.primary_gstin}
                               </div>
                               {user.gst_verified ? (
@@ -580,7 +580,7 @@ export default function AdminDashboardPage() {
                               )}
                             </div>
                           ) : (
-                            <span className="text-xs text-slate-500 italic">
+                            <span className="text-xs text-stone-500 italic">
                               Not registered
                             </span>
                           )}
@@ -600,7 +600,7 @@ export default function AdminDashboardPage() {
                             </span>
                             <button
                               onClick={() => openCreditModal(user)}
-                              className="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-0.5 mt-0.5 transition-colors"
+                              className="text-[11px] text-emerald-400 hover:text-emerald-300 flex items-center gap-0.5 mt-0.5 transition-colors"
                             >
                               <PlusCircle className="w-3 h-3" />
                               <span>Top Up</span>
@@ -615,7 +615,7 @@ export default function AdminDashboardPage() {
                               <div>
                                 <div className="flex items-center gap-1.5">
                                   {isCustom ? (
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-indigo-500/30">
                                       <Sparkles className="w-3 h-3" />
                                       {sub?.plan || "Custom Deal"}
                                     </span>
@@ -626,9 +626,9 @@ export default function AdminDashboardPage() {
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-[11px] text-slate-400 mt-1">
+                                <div className="text-[11px] text-stone-400 mt-1">
                                   {sub?.deal_amount ? (
-                                    <span className="text-slate-300 font-medium mr-2">
+                                    <span className="text-stone-300 font-medium mr-2">
                                       ₹{sub.deal_amount} ({sub.billing_cycle})
                                     </span>
                                   ) : null}
@@ -638,7 +638,7 @@ export default function AdminDashboardPage() {
                                   </span>
                                   {user.upcoming_subscription?.plan && (
                                     <div className="mt-1 flex items-center gap-1">
-                                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-slate-700 text-slate-300 font-medium">
+                                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-slate-700 text-stone-300 font-medium">
                                         <Clock className="w-2.5 h-2.5" />
                                         Queued: {user.upcoming_subscription.plan}
                                       </span>
@@ -648,7 +648,7 @@ export default function AdminDashboardPage() {
                               </div>
                             ) : (
                               <div>
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-[#1a1a1c] text-stone-400 border border-stone-700">
                                   Free Tier
                                 </span>
                                 {sub?.status === "cancelled" && (
@@ -669,7 +669,7 @@ export default function AdminDashboardPage() {
                               <span>Active</span>
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+                            <span className="inline-flex items-center gap-1 text-xs text-stone-500">
                               <XCircle className="w-4 h-4" />
                               <span>Disabled</span>
                             </span>
@@ -681,7 +681,7 @@ export default function AdminDashboardPage() {
                           <div className="inline-flex items-center gap-2">
                             <button
                               onClick={() => openSubscriptionModal(user)}
-                              className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-1"
+                              className="px-3 py-1.5 rounded-xl bg-[#047857] hover:bg-[#065f46] text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-1"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
                               <span>Custom Plan</span>
@@ -712,26 +712,26 @@ export default function AdminDashboardPage() {
       {/* MODAL 1: MANAGE CUSTOM SUBSCRIPTION                  */}
       {/* ---------------------------------------------------- */}
       {isSubModalOpen && selectedUser && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl shadow-2xl p-6 overflow-y-auto max-h-[90vh] animate-fadeIn">
+        <div className="fixed inset-0 z-50 bg-[#101011]/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#141415] border border-stone-800 rounded-2xl w-full max-w-xl shadow-2xl p-6 overflow-y-auto max-h-[90vh] animate-fadeIn">
             {/* Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+            <div className="flex items-center justify-between pb-4 border-b border-stone-800">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-slate-800 flex items-center justify-center text-white">
+                <div className="w-8 h-8 rounded-xl bg-[#1a1a1c] flex items-center justify-center text-white">
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-white">
                     Apply Custom Subscription
                   </h3>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-stone-400">
                     For: {selectedUser.name || selectedUser.email}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsSubModalOpen(false)}
-                className="text-slate-400 hover:text-white p-1"
+                className="text-stone-400 hover:text-white p-1"
               >
                 ✕
               </button>
@@ -739,12 +739,12 @@ export default function AdminDashboardPage() {
 
             {/* Active Subscription Notice */}
             {selectedUser.subscription?.active && (
-              <div className="mt-3 p-3 rounded-xl bg-slate-800 border border-slate-700 text-xs flex items-center justify-between">
+              <div className="mt-3 p-3 rounded-xl bg-[#1a1a1c] border border-stone-700 text-xs flex items-center justify-between">
                 <div>
                   <span className="font-semibold block text-white">
                     Current Active Plan: {selectedUser.subscription.plan || "Pro"}
                   </span>
-                  <span className="text-[11px] text-slate-400">
+                  <span className="text-[11px] text-stone-400">
                     Valid until: {formatPeriodEnd(selectedUser.subscription.current_period_end)}
                   </span>
                 </div>
@@ -756,7 +756,7 @@ export default function AdminDashboardPage() {
 
             {/* Presets Chips */}
             <div className="mt-4">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-stone-400 mb-2">
                 Quick Pitch Presets:
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -773,10 +773,10 @@ export default function AdminDashboardPage() {
                       "Standard SMB Pro monthly subscription."
                     )
                   }
-                  className="p-2.5 text-left bg-slate-800/80 border border-slate-700 hover:border-slate-500 rounded-xl text-xs transition"
+                  className="p-2.5 text-left bg-[#1a1a1c]/80 border border-stone-700 hover:border-slate-500 rounded-xl text-xs transition"
                 >
                   <div className="font-semibold text-white">SMB Pro</div>
-                  <div className="text-[10px] text-slate-400">₹499 / 30d</div>
+                  <div className="text-[10px] text-stone-400">₹499 / 30d</div>
                 </button>
 
                 <button
@@ -792,10 +792,10 @@ export default function AdminDashboardPage() {
                       "Chartered Accountant quarterly package."
                     )
                   }
-                  className="p-2.5 text-left bg-slate-800/80 border border-slate-700 hover:border-slate-500 rounded-xl text-xs transition"
+                  className="p-2.5 text-left bg-[#1a1a1c]/80 border border-stone-700 hover:border-slate-500 rounded-xl text-xs transition"
                 >
-                  <div className="font-semibold text-indigo-300">CA Quarterly</div>
-                  <div className="text-[10px] text-slate-400">₹1,499 / 90d</div>
+                  <div className="font-semibold text-emerald-300">CA Quarterly</div>
+                  <div className="text-[10px] text-stone-400">₹1,499 / 90d</div>
                 </button>
 
                 <button
@@ -811,10 +811,10 @@ export default function AdminDashboardPage() {
                       "Annual CA Partner plan with 2,500 scans."
                     )
                   }
-                  className="p-2.5 text-left bg-slate-800/80 border border-slate-700 hover:border-slate-500 rounded-xl text-xs transition"
+                  className="p-2.5 text-left bg-[#1a1a1c]/80 border border-stone-700 hover:border-slate-500 rounded-xl text-xs transition"
                 >
                   <div className="font-semibold text-emerald-300">CA Annual</div>
-                  <div className="text-[10px] text-slate-400">₹4,999 / 365d</div>
+                  <div className="text-[10px] text-stone-400">₹4,999 / 365d</div>
                 </button>
 
                 <button
@@ -830,10 +830,10 @@ export default function AdminDashboardPage() {
                       "Full enterprise tier with unlimited scans."
                     )
                   }
-                  className="p-2.5 text-left bg-slate-800/80 border border-slate-700 hover:border-slate-500 rounded-xl text-xs transition"
+                  className="p-2.5 text-left bg-[#1a1a1c]/80 border border-stone-700 hover:border-slate-500 rounded-xl text-xs transition"
                 >
                   <div className="font-semibold text-amber-300">Unlimited</div>
-                  <div className="text-[10px] text-slate-400">₹9,999 / 365d</div>
+                  <div className="text-[10px] text-stone-400">₹9,999 / 365d</div>
                 </button>
               </div>
             </div>
@@ -842,7 +842,7 @@ export default function AdminDashboardPage() {
             <form onSubmit={handleSaveSubscription} className="mt-5 space-y-4">
               {/* Plan Name */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-stone-300 mb-1">
                   Custom Plan Name:
                 </label>
                 <input
@@ -851,7 +851,7 @@ export default function AdminDashboardPage() {
                   onChange={(e) =>
                     setSubForm({ ...subForm, plan_name: e.target.value })
                   }
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  className="w-full px-3 py-2 bg-[#1a1a1c] border border-stone-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#047857]/20"
                   required
                 />
               </div>
@@ -859,7 +859,7 @@ export default function AdminDashboardPage() {
               {/* Deal Amount & Billing Cycle */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-stone-300 mb-1">
                     Agreed Deal Price (₹):
                   </label>
                   <input
@@ -871,12 +871,12 @@ export default function AdminDashboardPage() {
                         deal_amount: parseFloat(e.target.value) || 0,
                       })
                     }
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    className="w-full px-3 py-2 bg-[#1a1a1c] border border-stone-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#047857]/20"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-stone-300 mb-1">
                     Billing Cycle:
                   </label>
                   <select
@@ -887,7 +887,7 @@ export default function AdminDashboardPage() {
                         billing_cycle: e.target.value as any,
                       })
                     }
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    className="w-full px-3 py-2 bg-[#1a1a1c] border border-stone-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#047857]/20"
                   >
                     <option value="monthly">Monthly</option>
                     <option value="quarterly">Quarterly</option>
@@ -901,7 +901,7 @@ export default function AdminDashboardPage() {
               {/* Validity Days & Bonus Credits */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-stone-300 mb-1">
                     Duration (Days from Today):
                   </label>
                   <input
@@ -913,13 +913,13 @@ export default function AdminDashboardPage() {
                         duration_days: parseInt(e.target.value) || 30,
                       })
                     }
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    className="w-full px-3 py-2 bg-[#1a1a1c] border border-stone-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#047857]/20"
                     min={1}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-stone-300 mb-1">
                     Bonus Credits to Grant:
                   </label>
                   <input
@@ -931,16 +931,16 @@ export default function AdminDashboardPage() {
                         bonus_credits: parseInt(e.target.value) || 0,
                       })
                     }
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    className="w-full px-3 py-2 bg-[#1a1a1c] border border-stone-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#047857]/20"
                     min={0}
                   />
                 </div>
               </div>
 
               {/* Switches */}
-              <div className="p-3 bg-slate-800/80 border border-slate-700 rounded-xl space-y-2.5">
+              <div className="p-3 bg-[#1a1a1c]/80 border border-stone-700 rounded-xl space-y-2.5">
                 <label className="flex items-center justify-between cursor-pointer">
-                  <span className="text-xs text-slate-200 font-medium">
+                  <span className="text-xs text-stone-200 font-medium">
                     Activate Pro Status &amp; Cloud Sync
                   </span>
                   <input
@@ -953,12 +953,12 @@ export default function AdminDashboardPage() {
                         cloud_sync_enabled: e.target.checked,
                       })
                     }
-                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                    className="w-4 h-4 rounded text-[#047857] focus:ring-[#047857]"
                   />
                 </label>
 
                 <label className="flex items-center justify-between cursor-pointer">
-                  <span className="text-xs text-slate-200 font-medium">
+                  <span className="text-xs text-stone-200 font-medium">
                     Unlimited AI Invoice Scans (Bypass Deductions)
                   </span>
                   <input
@@ -970,16 +970,16 @@ export default function AdminDashboardPage() {
                         unlimited_credits: e.target.checked,
                       })
                     }
-                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                    className="w-4 h-4 rounded text-[#047857] focus:ring-[#047857]"
                   />
                 </label>
 
-                <label className="flex items-center justify-between cursor-pointer pt-2 border-t border-slate-700">
+                <label className="flex items-center justify-between cursor-pointer pt-2 border-t border-stone-700">
                   <div>
-                    <span className="text-xs text-indigo-300 font-semibold block">
+                    <span className="text-xs text-emerald-300 font-semibold block">
                       Queue as Upcoming Plan (as_upcoming)
                     </span>
-                    <span className="text-[10px] text-slate-400 block">
+                    <span className="text-[10px] text-stone-400 block">
                       {selectedUser.subscription?.current_period_end
                         ? `Schedules this plan to begin automatically when current cycle ends on ${formatPeriodEnd(selectedUser.subscription.current_period_end)}`
                         : "Schedules this plan to activate after current cycle ends"}
@@ -994,14 +994,14 @@ export default function AdminDashboardPage() {
                         as_upcoming: e.target.checked,
                       })
                     }
-                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                    className="w-4 h-4 rounded text-[#047857] focus:ring-[#047857]"
                   />
                 </label>
               </div>
 
               {/* Pitch Notes */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-stone-300 mb-1">
                   Sales Pitch / Negotiation Notes:
                 </label>
                 <textarea
@@ -1011,23 +1011,23 @@ export default function AdminDashboardPage() {
                   }
                   rows={2}
                   placeholder="e.g., Client requested quarterly discount. Promised priority email support."
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  className="w-full px-3 py-2 bg-[#1a1a1c] border border-stone-700 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#047857]/20"
                 />
               </div>
 
               {/* Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-800">
                 <button
                   type="button"
                   onClick={() => setIsSubModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+                  className="px-4 py-2 rounded-xl bg-[#1a1a1c] text-stone-300 text-xs font-semibold hover:bg-slate-700"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={actionLoading}
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl bg-[#047857] hover:bg-[#065f46] text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 disabled:opacity-50"
                 >
                   {actionLoading ? (
                     <>
@@ -1048,9 +1048,9 @@ export default function AdminDashboardPage() {
       {/* MODAL 2: ADJUST CREDITS                              */}
       {/* ---------------------------------------------------- */}
       {isCreditModalOpen && selectedUser && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl p-6 animate-fadeIn">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div className="fixed inset-0 z-50 bg-[#101011]/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#141415] border border-stone-800 rounded-2xl w-full max-w-md shadow-2xl p-6 animate-fadeIn">
+            <div className="flex items-center justify-between pb-3 border-b border-stone-800">
               <div className="flex items-center gap-2">
                 <Zap className="w-4 h-4 text-amber-400" />
                 <h3 className="text-sm font-bold text-white">
@@ -1059,14 +1059,14 @@ export default function AdminDashboardPage() {
               </div>
               <button
                 onClick={() => setIsCreditModalOpen(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-stone-400 hover:text-white"
               >
                 ✕
               </button>
             </div>
 
-            <div className="my-3 p-3 bg-slate-800 rounded-xl text-xs flex justify-between items-center">
-              <span className="text-slate-400">Current Balance:</span>
+            <div className="my-3 p-3 bg-[#1a1a1c] rounded-xl text-xs flex justify-between items-center">
+              <span className="text-stone-400">Current Balance:</span>
               <span className="text-amber-400 font-mono font-bold text-sm">
                 {selectedUser.credits} Credits
               </span>
@@ -1074,7 +1074,7 @@ export default function AdminDashboardPage() {
 
             <form onSubmit={handleSaveCredits} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-stone-300 mb-1">
                   Adjustment Mode:
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -1083,8 +1083,8 @@ export default function AdminDashboardPage() {
                     onClick={() => setCreditForm({ ...creditForm, mode: "add" })}
                     className={`py-2 px-3 rounded-xl text-xs font-medium border text-center transition-all ${
                       creditForm.mode === "add"
-                        ? "bg-indigo-600 border-indigo-500 text-white"
-                        : "bg-slate-800 border-slate-700 text-slate-400"
+                        ? "bg-[#047857] border-indigo-500 text-white"
+                        : "bg-[#1a1a1c] border-stone-700 text-stone-400"
                     }`}
                   >
                     + Add to Current
@@ -1094,8 +1094,8 @@ export default function AdminDashboardPage() {
                     onClick={() => setCreditForm({ ...creditForm, mode: "set" })}
                     className={`py-2 px-3 rounded-xl text-xs font-medium border text-center transition-all ${
                       creditForm.mode === "set"
-                        ? "bg-indigo-600 border-indigo-500 text-white"
-                        : "bg-slate-800 border-slate-700 text-slate-400"
+                        ? "bg-[#047857] border-indigo-500 text-white"
+                        : "bg-[#1a1a1c] border-stone-700 text-stone-400"
                     }`}
                   >
                     = Set Exact Total
@@ -1104,7 +1104,7 @@ export default function AdminDashboardPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-stone-300 mb-1">
                   Credit Amount:
                 </label>
                 <input
@@ -1116,13 +1116,13 @@ export default function AdminDashboardPage() {
                       amount: parseInt(e.target.value) || 0,
                     })
                   }
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white font-mono"
+                  className="w-full px-3 py-2 bg-[#1a1a1c] border border-stone-700 rounded-xl text-sm text-white font-mono"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-stone-300 mb-1">
                   Reason / Audit Note:
                 </label>
                 <input
@@ -1132,22 +1132,22 @@ export default function AdminDashboardPage() {
                     setCreditForm({ ...creditForm, note: e.target.value })
                   }
                   placeholder="e.g. Free top-up for demo feedback"
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white"
+                  className="w-full px-3 py-2 bg-[#1a1a1c] border border-stone-700 rounded-xl text-xs text-white"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-800">
                 <button
                   type="button"
                   onClick={() => setIsCreditModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+                  className="px-4 py-2 rounded-xl bg-[#1a1a1c] text-stone-300 text-xs font-semibold hover:bg-slate-700"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={actionLoading}
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl bg-[#047857] hover:bg-[#065f46] text-white text-xs font-semibold shadow-xs disabled:opacity-50"
                 >
                   {actionLoading ? "Updating..." : "Confirm Adjustment"}
                 </button>

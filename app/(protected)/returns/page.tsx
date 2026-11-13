@@ -19,8 +19,8 @@ function ReturnsRedirectContent() {
   }, [router, tab]);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+    <div className="min-h-screen bg-[#fafaf9] dark:bg-[#141415] flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-[#047857] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 }
@@ -29,8 +29,8 @@ export default function ReturnsRedirectPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
-          <div className="w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+        <div className="min-h-screen bg-[#fafaf9] dark:bg-[#141415] flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-[#047857] border-t-transparent rounded-full animate-spin" />
         </div>
       }
     >

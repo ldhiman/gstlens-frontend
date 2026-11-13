@@ -7,7 +7,9 @@ import BottomNav from "@/components/BottomNav";
 import OnboardingTour from "@/components/OnboardingTour";
 import BusinessOnboardingModal from "@/components/BusinessOnboardingModal";
 import AppSidebar, { SIDEBAR_COLLAPSE_EVENT } from "@/components/AppSidebar";
-import { WifiOff, Database, ShieldCheck, RefreshCw } from "lucide-react";
+import SandboxBanner from "@/components/SandboxBanner";
+import { isSandboxModeActive } from "@/lib/sandboxData";
+import { WifiOff, Database } from "lucide-react";
 
 export default function ProtectedLayout({ children }: { children: ReactNode }) {
   const {
@@ -16,11 +18,15 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     loading,
     isOnline,
     isOfflineMode,
+    isSandboxMode,
     enterOfflineMode,
+    enterSandboxMode,
     exitOfflineMode,
   } = useAuth();
   const router = useRouter();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  const isSandbox = isSandboxMode || isSandboxModeActive();
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -38,8 +44,20 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!loading) {
       if (!user) {
-        // If device is offline, automatically enter offline local workspace
-        if (typeof navigator !== "undefined" && !navigator.onLine) {
+        const hasSandboxParam =
+          typeof window !== "undefined" &&
+          new URLSearchParams(window.location.search).get("sandbox") === "true";
+        const isSandboxSaved =
+          typeof window !== "undefined" &&
+          localStorage.getItem("gstlens_sandbox_mode") === "true";
+        const isOfflineSaved =
+          typeof window !== "undefined" &&
+          localStorage.getItem("gstlens_offline_mode") === "true";
+        const isDeviceOffline = typeof navigator !== "undefined" && !navigator.onLine;
+
+        if (hasSandboxParam || isSandboxSaved) {
+          enterSandboxMode();
+        } else if (isOfflineSaved || isDeviceOffline) {
           enterOfflineMode();
         } else {
           router.replace("/login");
@@ -48,21 +66,24 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
         router.replace("/settings?tab=profile");
       }
     }
-  }, [loading, user, userProfile, router, enterOfflineMode]);
+  }, [loading, user, userProfile, router, enterOfflineMode, enterSandboxMode]);
 
   if (loading || !user) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
-      {/* Offline Status Bar Alert when working offline */}
-      {(!isOnline || isOfflineMode) && (
-        <div className="bg-amber-500/90 dark:bg-amber-600/90 text-slate-950 font-bold text-xs py-1.5 px-4 flex items-center justify-between z-50 sticky top-0 shadow-xs backdrop-blur-sm transition-all">
+    <div className="min-h-screen bg-[#fafaf9] dark:bg-[#141415] text-stone-900 dark:text-stone-100 flex flex-col">
+      {/* Sandbox Banner when in Guest Sandbox Mode */}
+      <SandboxBanner />
+
+      {/* Offline Status Bar Alert when working offline (and not in sandbox) */}
+      {(!isOnline || isOfflineMode) && !isSandbox && (
+        <div className="bg-stone-800 text-stone-100 border-b border-stone-700 font-medium text-xs py-1.5 px-4 flex items-center justify-between z-50 sticky top-0 shadow-xs backdrop-blur-sm transition-all">
           <div className="flex items-center gap-2 max-w-4xl mx-auto flex-1 justify-center sm:justify-start">
-            <WifiOff className="w-3.5 h-3.5 shrink-0" />
+            <WifiOff className="w-3.5 h-3.5 text-amber-400 shrink-0" />
             <span>
-              <strong>Offline Mode Active:</strong> All invoices, POS receipts, inventory, and clients are safely saved in local IndexedDB.
+              <strong>Offline Mode Active:</strong> Invoices, receipts, inventory, and clients are saved in local storage.
             </span>
-            <span className="hidden md:inline-flex items-center gap-1 text-[11px] opacity-90">
+            <span className="hidden md:inline-flex items-center gap-1 text-[11px] text-stone-400">
               <Database className="w-3 h-3" /> Zero data loss guaranteed
             </span>
           </div>
@@ -70,7 +91,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
           {isOnline && isOfflineMode && (
             <button
               onClick={() => exitOfflineMode()}
-              className="text-[11px] bg-slate-950 text-white px-2.5 py-0.5 rounded-lg hover:bg-slate-800 transition shrink-0 ml-2"
+              className="text-[11px] bg-stone-700 hover:bg-stone-600 text-stone-100 px-2.5 py-0.5 rounded-md transition shrink-0 ml-2 cursor-pointer"
             >
               Switch to Cloud Mode
             </button>

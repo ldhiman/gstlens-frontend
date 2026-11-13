@@ -222,21 +222,21 @@ export default function ClientsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 pb-20">
+    <div className="min-h-screen bg-[#fafaf9] dark:bg-[#141415] text-stone-900 dark:text-stone-100 pb-20">
       <Header />
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-6">
         {/* Title & Actions */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <span className="p-2 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 rounded-2xl border border-indigo-200/60 dark:border-indigo-800/60 shadow-xs">
+            <span className="p-2 bg-emerald-50 dark:bg-emerald-950/40 text-[#047857] dark:text-emerald-400 rounded-xl border border-emerald-200 dark:border-emerald-800/50 shadow-xs">
               <Users className="w-6 h-6" />
             </span>
             <div>
-              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+              <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">
                 Clients & Suppliers Directory
               </h1>
-              <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400">
+              <p className="text-xs md:text-sm text-stone-500 dark:text-stone-400">
                 Manage B2B buyers, vendors, GSTINs, and party ledgers with one-click statements.
               </p>
             </div>
@@ -244,7 +244,7 @@ export default function ClientsPage() {
 
           <button
             onClick={openAddModal}
-            className="flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 active:scale-[0.98] text-white text-xs font-bold rounded-2xl shadow-md shadow-indigo-500/20 transition"
+            className="flex items-center gap-1.5 px-4 py-2 bg-[#047857] hover:bg-[#065f46] text-white text-xs font-medium rounded-xl shadow-xs transition"
           >
             <Plus className="w-4 h-4" />
             <span>Add New Party</span>
@@ -253,68 +253,68 @@ export default function ClientsPage() {
 
         {/* Metrics Highlights */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-5">
-          <div className="bg-white dark:bg-slate-800/90 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider">
+          <div className="bg-white dark:bg-[#1a1a1c] p-5 rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-xs">
+            <div className="flex items-center justify-between text-stone-400 text-xs font-semibold uppercase tracking-wider">
               <span>Total Parties</span>
-              <span className="p-1.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 rounded-xl">
+              <span className="p-1.5 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 rounded-lg">
                 <Users className="w-4 h-4" />
               </span>
             </div>
-            <p className="text-2xl font-black font-mono tabular-nums text-slate-900 dark:text-white mt-2">
+            <p className="text-2xl font-semibold font-mono tabular-nums text-stone-900 dark:text-stone-100 mt-2">
               {clients.length}
             </p>
-            <p className="text-[11px] text-slate-400 mt-1">Customers and suppliers onboarded</p>
+            <p className="text-[11px] text-stone-400 mt-1">Customers and suppliers onboarded</p>
           </div>
 
-          <div className="bg-white dark:bg-slate-800/90 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider">
+          <div className="bg-white dark:bg-[#1a1a1c] p-5 rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-xs">
+            <div className="flex items-center justify-between text-stone-400 text-xs font-semibold uppercase tracking-wider">
               <span>GST Registered</span>
-              <span className="p-1.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-xl">
+              <span className="p-1.5 bg-emerald-50 dark:bg-emerald-950/40 text-[#047857] dark:text-emerald-400 rounded-lg">
                 <ShieldCheck className="w-4 h-4" />
               </span>
             </div>
-            <p className="text-2xl font-black font-mono tabular-nums text-emerald-600 dark:text-emerald-400 mt-2">
+            <p className="text-2xl font-semibold font-mono tabular-nums text-[#047857] dark:text-emerald-400 mt-2">
               {registeredPartiesCount}
             </p>
-            <p className="text-[11px] text-slate-400 mt-1">Verified 15-digit GSTIN businesses</p>
+            <p className="text-[11px] text-stone-400 mt-1">Verified 15-digit GSTIN businesses</p>
           </div>
 
-          <div className="bg-white dark:bg-slate-800/90 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider">
+          <div className="bg-white dark:bg-[#1a1a1c] p-5 rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-xs">
+            <div className="flex items-center justify-between text-stone-400 text-xs font-semibold uppercase tracking-wider">
               <span>Total Invoiced Sales</span>
-              <span className="p-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-xl">
+              <span className="p-1.5 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 rounded-lg">
                 <TrendingUp className="w-4 h-4" />
               </span>
             </div>
-            <p className="text-2xl font-black font-mono tabular-nums text-blue-600 dark:text-blue-400 mt-2">
+            <p className="text-2xl font-semibold font-mono tabular-nums text-stone-900 dark:text-stone-100 mt-2">
               {formatINR(totalClientSales)}
             </p>
-            <p className="text-[11px] text-slate-400 mt-1">Across all registered bills</p>
+            <p className="text-[11px] text-stone-400 mt-1">Across all registered bills</p>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="bg-white dark:bg-slate-800/90 p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-wrap items-center justify-between gap-3">
+        <div className="bg-white dark:bg-[#1a1a1c] p-3 rounded-xl border border-stone-200/80 dark:border-stone-800 shadow-xs flex flex-wrap items-center justify-between gap-3">
           <div className="flex-1 min-w-[240px] relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search by party name, trade name, GSTIN or phone number..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              className="w-full pl-10 pr-4 py-2.5 bg-[#fafaf9] dark:bg-[#141415] border border-slate-200 dark:border-slate-700/80 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#047857]/50"
             />
           </div>
 
-          <div className="flex bg-slate-100 dark:bg-slate-900/60 p-1 rounded-2xl text-xs font-semibold">
+          <div className="flex bg-stone-100 dark:bg-stone-800/60 p-1 rounded-xl text-xs font-medium border border-stone-200/60 dark:border-stone-800">
             {(["all", "customer", "vendor"] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setTypeFilter(t)}
                 className={`px-3.5 py-1.5 rounded-xl capitalize transition-all ${
                   typeFilter === t
-                    ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs font-bold"
-                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                    ? "bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 shadow-xs border border-stone-200 dark:border-stone-700/60 font-medium"
+                    : "text-stone-600 dark:text-stone-300 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 {t === "all" ? "All Parties" : `${t}s`}
@@ -326,20 +326,20 @@ export default function ClientsPage() {
         {/* Directory Grid / Empty State */}
         {filtered.length === 0 ? (
           <div className="bg-white dark:bg-slate-800/90 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-16 text-center space-y-3 shadow-xs">
-            <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-3xl flex items-center justify-center mx-auto shadow-inner">
+            <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 text-stone-400 rounded-3xl flex items-center justify-center mx-auto shadow-inner">
               <Users className="w-8 h-8" />
             </div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">
+            <h3 className="text-base font-bold text-stone-900 dark:text-stone-100">
               No parties found
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+            <p className="text-xs text-stone-500 dark:text-stone-400 max-w-sm mx-auto leading-relaxed">
               {search || typeFilter !== "all"
                 ? "No customer or supplier matches your search criteria. Try modifying your filter."
                 : "Add your customer and vendor profiles for automatic auto-fill in GST invoices."}
             </p>
             <button
               onClick={openAddModal}
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-2xl shadow-sm transition"
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#047857] hover:bg-[#065f46] text-white text-xs font-bold rounded-2xl shadow-sm transition"
             >
               <Plus className="w-4 h-4" />
               Add First Party
@@ -361,22 +361,22 @@ export default function ClientsPage() {
               return (
                 <div
                   key={c.id}
-                  className="bg-white dark:bg-slate-800/90 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col justify-between"
+                  className="bg-white dark:bg-[#1a1a1c] p-5 rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-xs hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col justify-between"
                 >
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/60">
+                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700 font-mono text-[10px]">
                             {c.type || "Customer"}
                           </span>
                           {c.isSEZ && (
-                            <span className="px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
+                            <span className="px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50 font-mono text-[10px]">
                               SEZ
                             </span>
                           )}
                         </div>
-                        <h3 className="font-bold text-slate-900 dark:text-white text-sm mt-1.5 truncate">
+                        <h3 className="font-bold text-stone-900 dark:text-stone-100 text-sm mt-1.5 truncate">
                           {c.name}
                         </h3>
                         {c.tradeName && (
@@ -394,7 +394,7 @@ export default function ClientsPage() {
                         </button>
                         <button
                           onClick={() => handleDelete(c.id, c.name)}
-                          className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-600 rounded-xl transition"
+                          className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-stone-400 hover:text-rose-600 rounded-xl transition"
                           title="Delete Party"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -402,27 +402,27 @@ export default function ClientsPage() {
                       </div>
                     </div>
 
-                    <div className="text-xs space-y-1.5 text-slate-600 dark:text-slate-300">
+                    <div className="text-xs space-y-1.5 text-stone-600 dark:text-stone-300">
                       <p className="font-mono text-[11px]">
-                        <span className="font-semibold text-slate-400">GSTIN:</span>{" "}
+                        <span className="font-semibold text-stone-400">GSTIN:</span>{" "}
                         {c.gstin ? (
-                          <span className="font-bold text-indigo-600 dark:text-indigo-400 uppercase">{c.gstin}</span>
+                          <span className="font-medium text-[#047857] dark:text-emerald-400 uppercase font-mono">{c.gstin}</span>
                         ) : (
-                          <span className="text-slate-400 italic">Unregistered (B2C)</span>
+                          <span className="text-stone-400 italic">Unregistered (B2C)</span>
                         )}
                       </p>
                       {c.phone && (
-                        <p className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-                          <Phone className="w-3 h-3 text-slate-400 shrink-0" /> {c.phone}
+                        <p className="flex items-center gap-1.5 text-stone-500 dark:text-stone-400">
+                          <Phone className="w-3 h-3 text-stone-400 shrink-0" /> {c.phone}
                         </p>
                       )}
                       {c.email && (
-                        <p className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 truncate">
-                          <Mail className="w-3 h-3 text-slate-400 shrink-0" /> {c.email}
+                        <p className="flex items-center gap-1.5 text-stone-500 dark:text-stone-400 truncate">
+                          <Mail className="w-3 h-3 text-stone-400 shrink-0" /> {c.email}
                         </p>
                       )}
-                      <p className="flex items-start gap-1.5 text-slate-500 dark:text-slate-400">
-                        <MapPin className="w-3 h-3 mt-0.5 shrink-0 text-slate-400" />
+                      <p className="flex items-start gap-1.5 text-stone-500 dark:text-stone-400">
+                        <MapPin className="w-3 h-3 mt-0.5 shrink-0 text-stone-400" />
                         <span className="truncate">
                           {c.address ? `${c.address}, ` : ""}{c.state || "India"}
                         </span>
@@ -431,20 +431,20 @@ export default function ClientsPage() {
                   </div>
 
                   {/* Ledger Quick Summary */}
-                  <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                  <div className="mt-4 pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between text-xs">
                     <div>
-                      <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">
+                      <span className="text-[10px] text-stone-400 block uppercase font-bold tracking-wider">
                         Total Invoiced
                       </span>
-                      <span className="font-black font-mono tabular-nums text-slate-900 dark:text-white">
+                      <span className="font-semibold font-mono tabular-nums text-stone-900 dark:text-stone-100">
                         {formatINR(totalTurnover)}
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">
+                      <span className="text-[10px] text-stone-400 block uppercase font-bold tracking-wider">
                         Invoices
                       </span>
-                      <span className="font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">
+                      <span className="font-medium text-stone-600 dark:text-stone-300 font-mono tabular-nums">
                         {clientInvoices.length} bill{clientInvoices.length !== 1 ? "s" : ""}
                       </span>
                     </div>
@@ -459,14 +459,14 @@ export default function ClientsPage() {
       {/* Add / Edit Client Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-lg p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+          <div className="bg-white dark:bg-[#1a1a1c] rounded-2xl w-full max-w-lg p-6 shadow-xl border border-stone-200/80 dark:border-stone-800 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b border-stone-100 dark:border-stone-800">
+              <h3 className="text-base font-bold text-stone-900 dark:text-stone-100">
                 {editingClient ? "Edit Party Profile" : "Add New Customer / Supplier"}
               </h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-400 hover:text-slate-600"
+                className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-stone-400 hover:text-slate-600"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -474,7 +474,7 @@ export default function ClientsPage() {
 
             <form onSubmit={handleSave} className="space-y-4 text-xs">
               {/* GSTIN First for Instant Auto-Fill */}
-              <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/80 space-y-2">
+              <div className="p-3.5 bg-stone-50 dark:bg-stone-900/60 rounded-xl border border-stone-200 dark:border-stone-800 space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
                     GSTIN (Optional for Unregistered B2C)
@@ -483,11 +483,11 @@ export default function ClientsPage() {
                     type="button"
                     onClick={() => handleGstLookup()}
                     disabled={isFetchingGst || !gstin || gstin.length < 15}
-                    className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 disabled:opacity-40 transition cursor-pointer flex items-center gap-1"
+                    className="text-[11px] font-bold text-[#047857] dark:text-emerald-400 hover:text-[#047857] disabled:opacity-40 transition cursor-pointer flex items-center gap-1"
                   >
                     {isFetchingGst ? (
                       <span className="flex items-center gap-1">
-                        <span className="w-3 h-3 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                        <span className="w-3 h-3 border-2 border-[#047857] border-t-transparent rounded-full animate-spin" />
                         Fetching Details...
                       </span>
                     ) : (
@@ -507,7 +507,7 @@ export default function ClientsPage() {
                       handleGstLookup(val);
                     }
                   }}
-                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-mono text-xs uppercase font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-mono text-xs uppercase font-bold text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-[#047857]"
                 />
                 {gstStatus && (
                   <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
@@ -528,7 +528,7 @@ export default function ClientsPage() {
                     placeholder="e.g. Reliance Retail Ltd or Rajesh Sharma"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl text-xs font-normal focus:outline-none focus:ring-1 focus:ring-[#047857]"
                   />
                 </div>
 
@@ -541,7 +541,7 @@ export default function ClientsPage() {
                     placeholder="Doing Business As (DBA)"
                     value={tradeName}
                     onChange={(e) => setTradeName(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl text-xs font-normal focus:outline-none focus:ring-1 focus:ring-[#047857]"
                   />
                 </div>
 
@@ -555,7 +555,7 @@ export default function ClientsPage() {
                     maxLength={10}
                     value={pan}
                     onChange={(e) => setPan(e.target.value.toUpperCase())}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono text-xs uppercase focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl font-mono text-xs uppercase focus:outline-none focus:ring-1 focus:ring-[#047857]"
                   />
                 </div>
 
@@ -568,7 +568,7 @@ export default function ClientsPage() {
                     placeholder="+91 98765 43210"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl text-xs font-normal focus:outline-none focus:ring-1 focus:ring-[#047857]"
                   />
                 </div>
 
@@ -581,7 +581,7 @@ export default function ClientsPage() {
                     placeholder="billing@party.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl text-xs font-normal focus:outline-none focus:ring-1 focus:ring-[#047857]"
                   />
                 </div>
 
@@ -594,7 +594,7 @@ export default function ClientsPage() {
                     placeholder="Shop No, Building, Street, Area"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl text-xs font-normal focus:outline-none focus:ring-1 focus:ring-[#047857]"
                   />
                 </div>
 
@@ -605,7 +605,7 @@ export default function ClientsPage() {
                   <select
                     value={state}
                     onChange={(e) => setState(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl text-xs font-normal focus:outline-none focus:ring-1 focus:ring-[#047857]"
                   >
                     {INDIAN_STATES.map((s) => (
                       <option key={s.code} value={s.name}>
@@ -625,7 +625,7 @@ export default function ClientsPage() {
                     maxLength={6}
                     value={pincode}
                     onChange={(e) => setPincode(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#047857]/50"
                   />
                 </div>
 
@@ -636,7 +636,7 @@ export default function ClientsPage() {
                   <select
                     value={clientType}
                     onChange={(e: any) => setClientType(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-3 py-2 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl text-xs font-normal focus:outline-none focus:ring-1 focus:ring-[#047857]"
                   >
                     <option value="customer">Customer (Buyer)</option>
                     <option value="vendor">Vendor (Supplier)</option>
@@ -650,7 +650,7 @@ export default function ClientsPage() {
                     id="isSEZ"
                     checked={isSEZ}
                     onChange={(e) => setIsSEZ(e.target.checked)}
-                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded border-slate-300 text-[#047857] focus:ring-[#047857]"
                   />
                   <label htmlFor="isSEZ" className="text-xs font-bold text-slate-700 dark:text-slate-300">
                     SEZ Unit (Zero-Rated Supply)
@@ -658,7 +658,7 @@ export default function ClientsPage() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex justify-end gap-2 pt-4 border-t border-stone-100 dark:border-stone-800">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
@@ -668,7 +668,7 @@ export default function ClientsPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/20 transition"
+                  className="px-4 py-2 bg-[#047857] hover:bg-[#065f46] text-white rounded-xl text-xs font-medium shadow-xs transition"
                 >
                   Save Party
                 </button>

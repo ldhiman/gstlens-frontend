@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
     --font-sans: var(--font-inter);
@@ -118,7 +120,13 @@
 @media print {
   @page {
     size: A4 portrait;
-    margin: 6mm 8mm;
+    margin: 4mm 6mm;
+  }
+
+  *, *:before, *:after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    box-sizing: border-box !important;
   }
 
   html, body {
@@ -126,8 +134,10 @@
     color: #000000 !important;
     margin: 0 !important;
     padding: 0 !important;
+    width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
+    overflow: visible !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -178,6 +188,15 @@
     print-color-adjust: exact !important;
   }
 
+  /* Single invoice sheet container prevents splitting onto page 2 */
+  .print-invoice-sheet {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
   /* Strip forced min-heights and drop shadows that cause extra blank pages */
   #print-area [class*="min-h-"] {
     min-height: 0 !important;
@@ -187,10 +206,22 @@
     box-shadow: none !important;
   }
 
-  .print-page-break {
+  /* Page break ONLY between multi-copy items, NEVER after the last item */
+  .print-page-break:not(:last-child) {
     page-break-after: always !important;
     break-after: page !important;
     margin-bottom: 0 !important;
+  }
+
+  .print-page-break:last-child {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    margin-bottom: 0 !important;
+  }
+
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
   }
 
   tr, .print-avoid-break {

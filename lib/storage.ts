@@ -9,6 +9,8 @@ export type StoredInvoice = {
   data: any; // Canonical invoice JSON or full invoice schema
   created_at: number;
   updated_at: number;
+  created_time?: string; // ISO 8601 string
+  updated_time?: string; // ISO 8601 string
   synced_to_cloud: 0 | 1;
   deleted: 0 | 1;
   cloud_id: string;
@@ -80,6 +82,10 @@ export interface PurchaseBill {
   total: number;
   note?: string;
   created_at: number;
+  updated_at?: number;
+  created_time?: string; // ISO 8601 string
+  updated_time?: string; // ISO 8601 string
+  status?: "draft" | "confirmed" | "auto_saved";
 }
 
 export interface Expense {
@@ -460,14 +466,25 @@ export async function saveInvoiceDraft(
   const db = await openDB();
   const fp = getFP(invoiceData.invoice_date);
 
+  let existing: StoredInvoice | null = null;
   if (invoiceData._local_id) {
-    const existing = await getInvoiceById(invoiceData._local_id);
+    existing = await getInvoiceById(invoiceData._local_id);
     if (existing?.deleted === 1) {
       throw new Error("Cannot save a deleted invoice");
     }
   }
 
   const id = invoiceData._local_id ?? uuid();
+  const now = Date.now();
+  const nowIso = new Date(now).toISOString();
+
+  const created_at = invoiceData.created_at ?? existing?.created_at ?? now;
+  const created_time =
+    invoiceData.created_time ||
+    existing?.created_time ||
+    (created_at ? new Date(created_at).toISOString() : nowIso);
+  const updated_at = now;
+  const updated_time = nowIso;
 
   const record: StoredInvoice = {
     id,
@@ -477,9 +494,13 @@ export async function saveInvoiceDraft(
       ...invoiceData,
       fp,
       _local_id: id,
+      created_time,
+      updated_time,
     },
-    created_at: invoiceData.created_at ?? Date.now(),
-    updated_at: Date.now(),
+    created_at,
+    updated_at,
+    created_time,
+    updated_time,
     synced_to_cloud: 0,
     deleted: 0,
     cloud_id: "",
@@ -509,7 +530,13 @@ export async function updateInvoice(
   updates: Partial<
     Pick<
       StoredInvoice,
-      "data" | "status" | "synced_to_cloud" | "cloud_id" | "deleted"
+      | "data"
+      | "status"
+      | "synced_to_cloud"
+      | "cloud_id"
+      | "deleted"
+      | "created_time"
+      | "updated_time"
     >
   >
 ) {
@@ -536,8 +563,20 @@ export async function updateInvoice(
         return;
       }
 
+      const now = Date.now();
+      const nowIso = new Date(now).toISOString();
+      const created_at = existing.created_at || now;
+      const created_time =
+        existing.created_time ||
+        existing.data?.created_time ||
+        (created_at ? new Date(created_at).toISOString() : nowIso);
+      const updated_at = now;
+      const updated_time = nowIso;
+
       const mergedData = updates.data
-        ? { ...existing.data, ...updates.data }
+        ? { ...existing.data, ...updates.data, created_time, updated_time }
+        : existing.data
+        ? { ...existing.data, created_time, updated_time }
         : existing.data;
 
       const newFP = mergedData?.invoice_date
@@ -553,7 +592,10 @@ export async function updateInvoice(
         ...updates,
         fp: newFP,
         data: mergedData,
-        updated_at: Date.now(),
+        created_at,
+        created_time,
+        updated_at,
+        updated_time,
         deleted:
           updates.deleted !== undefined
             ? updates.deleted
@@ -581,8 +623,32 @@ export async function getAllInvoices(): Promise<StoredInvoice[]> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, "readonly");
     const req = tx.objectStore(STORE_NAME).getAll();
-    req.onsuccess = () =>
-      resolve(req.result.filter((inv) => inv.deleted !== 1));
+    req.onsuccess = () => {
+      const items = (req.result || [])
+        .filter((inv) => inv.deleted !== 1)
+        .map((inv) => {
+          const created_time =
+            inv.created_time ||
+            inv.data?.created_time ||
+            (inv.created_at ? new Date(inv.created_at).toISOString() : new Date().toISOString());
+          const updated_time =
+            inv.updated_time ||
+            inv.data?.updated_time ||
+            (inv.updated_at ? new Date(inv.updated_at).toISOString() : created_time);
+          return {
+            ...inv,
+            created_time,
+            updated_time,
+            data: inv.data ? { ...inv.data, created_time, updated_time } : inv.data,
+          };
+        })
+        .sort((a, b) => {
+          const tA = new Date(a.updated_time || a.updated_at || 0).getTime();
+          const tB = new Date(b.updated_time || b.updated_at || 0).getTime();
+          return tB - tA; // sort according to updated_time desc
+        });
+      resolve(items);
+    };
     req.onerror = () => reject(req.error);
   });
 }
@@ -727,7 +793,29 @@ export async function getAllPurchases(): Promise<PurchaseBill[]> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_PURCHASES, "readonly");
     const req = tx.objectStore(STORE_PURCHASES).getAll();
-    req.onsuccess = () => resolve(req.result || []);
+    req.onsuccess = () => {
+      const items = (req.result || [])
+        .map((p: PurchaseBill) => {
+          const created_time =
+            p.created_time ||
+            (p.created_at ? new Date(p.created_at).toISOString() : new Date().toISOString());
+          const updated_time =
+            p.updated_time ||
+            (p.updated_at ? new Date(p.updated_at).toISOString() : created_time);
+          return {
+            ...p,
+            status: p.status || "confirmed",
+            created_time,
+            updated_time,
+          };
+        })
+        .sort((a: PurchaseBill, b: PurchaseBill) => {
+          const tA = new Date(a.updated_time || a.updated_at || 0).getTime();
+          const tB = new Date(b.updated_time || b.updated_at || 0).getTime();
+          return tB - tA; // sort according to updated_time desc
+        });
+      resolve(items);
+    };
     req.onerror = () => reject(req.error);
   });
 }
@@ -735,7 +823,26 @@ export async function getAllPurchases(): Promise<PurchaseBill[]> {
 export async function savePurchase(purchase: PurchaseBill): Promise<string> {
   const db = await openDB();
   const id = purchase.id || uuid();
-  const toSave = { ...purchase, id, created_at: purchase.created_at || Date.now() };
+  const now = Date.now();
+  const nowIso = new Date(now).toISOString();
+
+  const created_at = purchase.created_at || now;
+  const created_time =
+    purchase.created_time ||
+    (created_at ? new Date(created_at).toISOString() : nowIso);
+  const updated_at = now;
+  const updated_time = nowIso;
+
+  const status = purchase.status || "confirmed";
+  const toSave: PurchaseBill = {
+    ...purchase,
+    id,
+    status,
+    created_at,
+    updated_at,
+    created_time,
+    updated_time,
+  };
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_PURCHASES, "readwrite");
     tx.objectStore(STORE_PURCHASES).put(toSave);

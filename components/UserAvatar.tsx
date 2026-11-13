@@ -17,12 +17,12 @@ type Props = {
 /* ---------------- Deterministic Colors ---------------- */
 
 const AVATAR_GRADIENTS = [
-  "from-blue-600 to-indigo-600",
-  "from-emerald-600 to-teal-600",
-  "from-violet-600 to-purple-600",
-  "from-rose-600 to-pink-600",
-  "from-amber-600 to-orange-600",
-  "from-cyan-600 to-sky-600",
+  "from-emerald-700 to-teal-800",
+  "from-stone-700 to-stone-900",
+  "from-emerald-800 to-stone-900",
+  "from-amber-700 to-stone-800",
+  "from-teal-800 to-emerald-900",
+  "from-stone-600 to-stone-800",
 ];
 
 function getDeterministicGradient(seed: string): string {

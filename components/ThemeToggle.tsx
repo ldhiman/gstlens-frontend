@@ -1,76 +1,73 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Sun, Moon, Monitor } from "lucide-react";
-
-type Theme = "light" | "dark" | "system";
+import { Sun, Moon } from "lucide-react";
 
 export function ThemeToggle({ className = "" }: { className?: string }) {
-  const [theme, setTheme] = useState<Theme>("system");
+  const [isDark, setIsDark] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const saved = localStorage.getItem("gstlens_theme") as Theme | null;
-    if (saved && (saved === "light" || saved === "dark" || saved === "system")) {
-      setTheme(saved);
-      applyTheme(saved);
-    } else {
-      applyTheme("system");
-    }
+    const root = document.documentElement;
+    setIsDark(root.classList.contains("dark"));
+
+    const onThemeChange = () => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    };
+
+    window.addEventListener("gstlens_theme_change", onThemeChange);
+    window.addEventListener("storage", onThemeChange);
+
+    return () => {
+      window.removeEventListener("gstlens_theme_change", onThemeChange);
+      window.removeEventListener("storage", onThemeChange);
+    };
   }, []);
 
-  const applyTheme = (t: Theme) => {
+  const toggleTheme = () => {
     const root = document.documentElement;
-    if (t === "dark") {
+    const nextDark = !root.classList.contains("dark");
+    if (nextDark) {
       root.classList.add("dark");
-    } else if (t === "light") {
-      root.classList.remove("dark");
+      localStorage.setItem("gstlens_theme", "dark");
     } else {
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      if (prefersDark) {
-        root.classList.add("dark");
-      } else {
-        root.classList.remove("dark");
-      }
+      root.classList.remove("dark");
+      localStorage.setItem("gstlens_theme", "light");
     }
-  };
-
-  const handleSelect = (t: Theme) => {
-    setTheme(t);
-    localStorage.setItem("gstlens_theme", t);
-    applyTheme(t);
-  };
-
-  // Next toggle cycle: light -> dark -> system -> light
-  const cycleTheme = () => {
-    const next: Theme = theme === "light" ? "dark" : theme === "dark" ? "system" : "light";
-    handleSelect(next);
+    setIsDark(nextDark);
+    window.dispatchEvent(
+      new CustomEvent("gstlens_theme_change", {
+        detail: nextDark ? "dark" : "light",
+      })
+    );
   };
 
   if (!mounted) {
     return (
-      <div className={`w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 animate-pulse ${className}`} />
+      <div
+        className={`w-8 h-8 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-100 dark:bg-stone-800 animate-pulse ${className}`}
+      />
     );
   }
 
   return (
     <button
       type="button"
-      onClick={cycleTheme}
-      title={`Theme: ${theme.toUpperCase()} (Click to change)`}
-      aria-label="Toggle theme"
-      className={`relative inline-flex items-center justify-center w-9 h-9 rounded-xl border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 ${
-        theme === "dark"
-          ? "bg-slate-800 border-slate-700 text-amber-300 hover:bg-slate-700"
-          : theme === "light"
-          ? "bg-white border-slate-200 text-amber-500 shadow-xs hover:bg-slate-50"
-          : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+      onClick={toggleTheme}
+      title={isDark ? "Switch to light theme" : "Switch to dark theme"}
+      aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
+      className={`relative inline-flex items-center justify-center w-8 h-8 rounded-xl border transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 active:scale-95 cursor-pointer ${
+        isDark
+          ? "bg-stone-800 border-stone-700 text-amber-300 hover:bg-stone-700 shadow-xs"
+          : "bg-white border-stone-200 text-amber-500 shadow-xs hover:bg-stone-50"
       } ${className}`}
     >
-      {theme === "light" && <Sun className="w-4 h-4 transition-transform rotate-0" />}
-      {theme === "dark" && <Moon className="w-4 h-4 transition-transform rotate-0" />}
-      {theme === "system" && <Monitor className="w-4 h-4 transition-transform rotate-0" />}
+      {isDark ? (
+        <Sun className="w-4 h-4 transition-transform hover:rotate-45" />
+      ) : (
+        <Moon className="w-4 h-4 transition-transform hover:-rotate-12" />
+      )}
     </button>
   );
 }
